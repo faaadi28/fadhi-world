@@ -220,7 +220,8 @@ export const PlayerController = ({
     if (inputMag > 0.1) {
       isMoving = true;
       const moveAngle = Math.atan2(moveRight, moveForward);
-      const worldAngle = cameraAngles.current.yaw + moveAngle;
+      // Correct coordinate frame so Left Arrow moves Left and Right Arrow moves Right
+      const worldAngle = cameraAngles.current.yaw - moveAngle;
 
       const vx = Math.sin(worldAngle) * speed;
       const vz = Math.cos(worldAngle) * speed;

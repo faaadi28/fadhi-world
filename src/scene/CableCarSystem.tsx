@@ -88,12 +88,12 @@ export const CableCarSystem = ({
     const pos = cableCurve.getPointAt(currentT);
     const tangent = cableCurve.getTangentAt(currentT).normalize();
 
-    // Position cabin slightly below the cable hanger
-    cabinRef.current.position.set(pos.x, pos.y - 1.8, pos.z);
+    // Position cabin so the roller pulley clamp at y=2.05 sits precisely on the cable
+    cabinRef.current.position.set(pos.x, pos.y - 2.05, pos.z);
 
-    // Align rotation with direction of travel along cable
-    const targetLook = pos.clone().add(tangent);
-    cabinRef.current.lookAt(targetLook);
+    // Keep cabin strictly upright with gravity - rotate yaw along cable path without inversion
+    const headingY = Math.atan2(tangent.x, tangent.z);
+    cabinRef.current.rotation.set(0, headingY, 0);
 
     // Detect if pausing at a station (around t = 0.0, 0.33, 0.66)
     let stationName = 'En Route Aerial Transit';
@@ -171,26 +171,34 @@ export const CableCarSystem = ({
 const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => void }) => {
   return (
     <group>
-      {/* Cable Roller Clamp Wheels & Hanger Arm */}
-      <group position={[0, 1.8, 0]}>
-        {/* Dual Wheel Pulley Clamps */}
-        <mesh position={[-0.22, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.12, 0.12, 0.08, 16]} />
-          <meshStandardMaterial color="#1f2429" metalness={0.9} roughness={0.2} />
+      {/* Cable Roller Clamp Wheels & Hanger Arm (Hanging upright from the cable at y=2.05) */}
+      <group>
+        {/* Dual Wheel Pulley Clamps Riding along the cable direction (Z-axis) */}
+        <mesh position={[0, 2.05, 0.22]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.13, 0.13, 0.1, 16]} />
+          <meshStandardMaterial color="#1f2429" metalness={0.9} roughness={0.25} />
         </mesh>
-        <mesh position={[0.22, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.12, 0.12, 0.08, 16]} />
-          <meshStandardMaterial color="#1f2429" metalness={0.9} roughness={0.2} />
+        <mesh position={[0, 2.05, -0.22]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.13, 0.13, 0.1, 16]} />
+          <meshStandardMaterial color="#1f2429" metalness={0.9} roughness={0.25} />
         </mesh>
 
-        {/* Curved Steel Hanger Bar */}
-        <mesh position={[0, -0.65, 0]}>
-          <cylinderGeometry args={[0.04, 0.04, 1.3, 8]} />
+        {/* Roller Housing Carrier Bracket */}
+        <mesh position={[0, 2.0, 0]} castShadow>
+          <boxGeometry args={[0.16, 0.12, 0.62]} />
           <meshStandardMaterial color="#2c333a" metalness={0.8} roughness={0.3} />
         </mesh>
-        <mesh position={[0, -1.3, 0]}>
-          <boxGeometry args={[0.4, 0.08, 0.4]} />
-          <meshStandardMaterial color="#b83328" roughness={0.6} />
+
+        {/* Vertical Structural Steel Suspension Hanger Beam */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <cylinderGeometry args={[0.045, 0.045, 1.05, 10]} />
+          <meshStandardMaterial color="#2c333a" metalness={0.8} roughness={0.3} />
+        </mesh>
+
+        {/* Roof Mounting Base Plaque */}
+        <mesh position={[0, 0.95, 0]} castShadow>
+          <boxGeometry args={[0.34, 0.08, 0.34]} />
+          <meshStandardMaterial color="#ba2e20" roughness={0.5} />
         </mesh>
       </group>
 
