@@ -1,17 +1,27 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+
+export type CableCarSpeed = 1 | 2 | 4;
 
 export interface CableCarWaypoint {
   name: string;
   stationId: string;
   position: [number, number, number];
   stationPlatform: [number, number, number];
+  description: string;
+  t: number;
 }
 
-// 3 Connected Stations:
-// 1. Welcome Plaza (Start/Main Spot)
+export interface StationArrivalInfo {
+  stationIndex: number;
+  currentStation: CableCarWaypoint;
+  nextStation: CableCarWaypoint;
+}
+
+// 3 Connected Stations along the aerial cable:
+// 1. Welcome Plaza (Start/Main Gateway)
 // 2. Lakeside Pavilion (About Me)
 // 3. Grand Valley Bridge (Experience)
 export const CABLE_CAR_STATIONS: CableCarWaypoint[] = [
@@ -19,19 +29,25 @@ export const CABLE_CAR_STATIONS: CableCarWaypoint[] = [
     name: "FADHI'S WORLD Station",
     stationId: 'sanctuary',
     position: [6, 7.5, 36],
-    stationPlatform: [6, 0.4, 36]
+    stationPlatform: [6, 0.4, 36],
+    description: "Welcome Gateway • Entry into Fadhi's World Zen 3D Universe",
+    t: 0.0
   },
   {
     name: 'Lakeside Pavilion Station (About Me)',
     stationId: 'about',
     position: [36, 8.2, 14],
-    stationPlatform: [36, 0.5, 14]
+    stationPlatform: [36, 0.5, 14],
+    description: "About Abdulla • Engineering mindset, skills, bio & vision",
+    t: 0.3333
   },
   {
     name: 'Valley Bridge Station (Experience)',
     stationId: 'experience',
     position: [4, 9.2, -34],
-    stationPlatform: [4, 1.4, -34]
+    stationPlatform: [4, 1.4, -34],
+    description: "Career & Experience • Milestones, leadership & tech achievements",
+    t: 0.6667
   }
 ];
 
@@ -40,17 +56,27 @@ interface CableCarSystemProps {
   onToggleRide: (riding: boolean) => void;
   onCabinPositionUpdate?: (pos: THREE.Vector3, currentStationName: string) => void;
   playerNearStation: string | null;
+  speedMultiplier?: CableCarSpeed;
+  isStationPromptActive?: boolean;
+  onStationArrival?: (info: StationArrivalInfo) => void;
+  continueNudge?: number;
 }
 
 export const CableCarSystem = ({
   isRiding,
   onToggleRide,
   onCabinPositionUpdate,
-  playerNearStation
+  playerNearStation,
+  speedMultiplier = 1,
+  isStationPromptActive = false,
+  onStationArrival,
+  continueNudge = 0
 }: CableCarSystemProps) => {
   const cabinRef = useRef<THREE.Group>(null);
   const progressRef = useRef(0); // 0 to 1 loop along the spline
   const pauseTimerRef = useRef(0);
+  const lastStationTriggeredRef = useRef<number | null>(null);
+  const wasRidingRef = useRef(isRiding);
 
   // Define 3D Catmull-Rom aerial cable curve through the 3 stations + towers
   const cableCurve = useMemo(() => {
@@ -70,19 +96,63 @@ export const CableCarSystem = ({
     return new THREE.TubeGeometry(cableCurve, 160, 0.05, 8, true);
   }, [cableCurve]);
 
+  // If user chooses to continue to next destination, advance past threshold
+  useEffect(() => {
+    if (continueNudge > 0) {
+      progressRef.current = (progressRef.current + 0.014) % 1.0;
+    }
+  }, [continueNudge]);
+
+  // When player freshly boards from ground, position cabin at their station
+  useEffect(() => {
+    if (!wasRidingRef.current && isRiding) {
+      const stIdx = CABLE_CAR_STATIONS.findIndex((s) => s.stationId === playerNearStation);
+      if (stIdx !== -1) {
+        const stationT = CABLE_CAR_STATIONS[stIdx].t;
+        progressRef.current = (stationT + 0.008) % 1.0;
+        lastStationTriggeredRef.current = stIdx;
+      }
+    }
+    wasRidingRef.current = isRiding;
+  }, [isRiding, playerNearStation]);
+
+  const handleDirectBoard = (idx: number) => {
+    const stationT = CABLE_CAR_STATIONS[idx].t;
+    progressRef.current = (stationT + 0.008) % 1.0;
+    lastStationTriggeredRef.current = idx;
+    onToggleRide(true);
+  };
+
   // Frame tick: smoothly animate cable car cabin along the aerial cable
   useFrame((_, delta) => {
     if (!cabinRef.current) return;
 
-    // Pause briefly at each station for boarding / viewing
-    if (pauseTimerRef.current > 0) {
+    // A. If Riding and Station Arrival Prompt is active, hold cabin steady at station platform
+    if (isRiding && isStationPromptActive) {
+      const currentT = progressRef.current;
+      const pos = cableCurve.getPointAt(currentT);
+      const tangent = cableCurve.getTangentAt(currentT).normalize();
+      cabinRef.current.position.set(pos.x, pos.y - 2.05, pos.z);
+      const headingY = Math.atan2(tangent.x, tangent.z);
+      cabinRef.current.rotation.set(0, headingY, 0);
+
+      const stIdx = lastStationTriggeredRef.current ?? 0;
+      const stationName = CABLE_CAR_STATIONS[stIdx]?.name || "Cable Car Station";
+      if (onCabinPositionUpdate) {
+        onCabinPositionUpdate(cabinRef.current.position, stationName);
+      }
+      return;
+    }
+
+    // B. If Empty/Scenic and pausing at station:
+    if (!isRiding && pauseTimerRef.current > 0) {
       pauseTimerRef.current -= delta;
       return;
     }
 
-    // Traverse speed
-    const speed = 0.015; // Complete full scenic loop in ~65 seconds
-    progressRef.current = (progressRef.current + delta * speed) % 1.0;
+    // Traverse speed scaled by rider's speed multiplier (1x, 2x, or 4x)
+    const baseSpeed = 0.014 * (speedMultiplier || 1);
+    progressRef.current = (progressRef.current + delta * baseSpeed) % 1.0;
 
     const currentT = progressRef.current;
     const pos = cableCurve.getPointAt(currentT);
@@ -95,17 +165,49 @@ export const CableCarSystem = ({
     const headingY = Math.atan2(tangent.x, tangent.z);
     cabinRef.current.rotation.set(0, headingY, 0);
 
-    // Detect if pausing at a station (around t = 0.0, 0.33, 0.66)
+    // Station Arrival Detection along the closed loop:
+    // Station 0: t ~ 0.0 (and wraps at 1.0)
+    // Station 1: t ~ 0.3333
+    // Station 2: t ~ 0.6667
+    let arrivedStationIdx: number | null = null;
+    if (currentT < 0.007 || currentT > 0.993) {
+      arrivedStationIdx = 0;
+    } else if (Math.abs(currentT - 0.3333) < 0.007) {
+      arrivedStationIdx = 1;
+    } else if (Math.abs(currentT - 0.6667) < 0.007) {
+      arrivedStationIdx = 2;
+    }
+
     let stationName = 'En Route Aerial Transit';
-    if (Math.abs(currentT - 0.0) < 0.006) {
-      stationName = "FADHI'S WORLD Station";
-      pauseTimerRef.current = 4.0; // 4 second station stop
-    } else if (Math.abs(currentT - 0.33) < 0.006) {
-      stationName = 'Lakeside Pavilion Station (About Me)';
-      pauseTimerRef.current = 4.5;
-    } else if (Math.abs(currentT - 0.66) < 0.006) {
-      stationName = 'Valley Bridge Station (Experience)';
-      pauseTimerRef.current = 4.5;
+
+    if (arrivedStationIdx !== null) {
+      const station = CABLE_CAR_STATIONS[arrivedStationIdx];
+      stationName = station.name;
+
+      if (lastStationTriggeredRef.current !== arrivedStationIdx) {
+        lastStationTriggeredRef.current = arrivedStationIdx;
+
+        if (isRiding) {
+          // Passenger in transit has arrived at a station!
+          const nextIdx = (arrivedStationIdx + 1) % CABLE_CAR_STATIONS.length;
+          onStationArrival?.({
+            stationIndex: arrivedStationIdx,
+            currentStation: station,
+            nextStation: CABLE_CAR_STATIONS[nextIdx]
+          });
+        } else {
+          // Empty cabin pauses for 4.2 seconds
+          pauseTimerRef.current = 4.2;
+        }
+      }
+    } else {
+      // Reset trigger lock once cabin has moved away from all stations
+      const dist0 = Math.min(currentT, 1.0 - currentT);
+      const dist1 = Math.abs(currentT - 0.3333);
+      const dist2 = Math.abs(currentT - 0.6667);
+      if (dist0 > 0.025 && dist1 > 0.025 && dist2 > 0.025) {
+        lastStationTriggeredRef.current = null;
+      }
     }
 
     // Notify player controller of cabin position when riding
@@ -134,7 +236,7 @@ export const CableCarSystem = ({
         subtitle="Route: To Lakeside Pavilion (About Me)"
         isNear={playerNearStation === 'sanctuary'}
         isRiding={isRiding}
-        onBoard={() => onToggleRide(true)}
+        onBoard={() => handleDirectBoard(0)}
       />
 
       {/* Station 2: Lakeside Pavilion (About Me) */}
@@ -144,7 +246,7 @@ export const CableCarSystem = ({
         subtitle="About Me • Route: To Valley Bridge (Experience)"
         isNear={playerNearStation === 'about'}
         isRiding={isRiding}
-        onBoard={() => onToggleRide(true)}
+        onBoard={() => handleDirectBoard(1)}
       />
 
       {/* Station 3: Valley Bridge (Experience) */}
@@ -154,7 +256,7 @@ export const CableCarSystem = ({
         subtitle="Career & Experience • Route: Return to Welcome Plaza"
         isNear={playerNearStation === 'experience'}
         isRiding={isRiding}
-        onBoard={() => onToggleRide(true)}
+        onBoard={() => handleDirectBoard(2)}
       />
 
       {/* 4. The 3D Cable Car Gondola Cabin */}

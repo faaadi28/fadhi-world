@@ -8,6 +8,7 @@ import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AccessibleIndex } from './components/AccessibleIndex';
 import { OpenWorldControls } from './components/OpenWorldControls';
 import type { LandmarkTarget } from './scene/PlayerController';
+import type { CableCarSpeed, StationArrivalInfo } from './scene/CableCarSystem';
 import { PORTFOLIO_DATA } from './data/portfolioData';
 
 export function App() {
@@ -21,6 +22,11 @@ export function App() {
   
   const [isRidingCableCar, setIsRidingCableCar] = useState<boolean>(false);
   const [cableCarStationName, setCableCarStationName] = useState<string>("FADHI'S WORLD Station");
+  const [cableCarSpeed, setCableCarSpeed] = useState<CableCarSpeed>(1);
+  const [stationArrivalInfo, setStationArrivalInfo] = useState<StationArrivalInfo | null>(null);
+  const [isStationPromptActive, setIsStationPromptActive] = useState<boolean>(false);
+  const [playerTeleportTarget, setPlayerTeleportTarget] = useState<[number, number, number] | null>(null);
+  const [continueNudge, setContinueNudge] = useState<number>(0);
   
   const [reducedMotion, setReducedMotion] = useState<boolean>(() => {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -36,7 +42,7 @@ export function App() {
     const handleWheel = (e: WheelEvent) => {
       if (isFreeRoam) return; // In free roam, wheel zooms camera
       const target = e.target as HTMLElement;
-      if (target.closest('.drawer-body') || target.closest('.modal-card') || target.closest('.index-drawer')) {
+      if (target.closest('.drawer-body') || target.closest('.modal-card') || target.closest('.index-drawer') || target.closest('.station-arrival-card')) {
         return;
       }
 
@@ -66,10 +72,86 @@ export function App() {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [activeZone, isFreeRoam]);
 
+  // Cable Car Station Interaction Handlers
+  const handleStationArrival = (info: StationArrivalInfo) => {
+    setStationArrivalInfo(info);
+    setIsStationPromptActive(true);
+    setCableCarStationName(info.currentStation.name);
+  };
+
+  const handleContinueNextDestination = () => {
+    setIsStationPromptActive(false);
+    setStationArrivalInfo(null);
+    setContinueNudge((n) => n + 1);
+  };
+
+  const handleExitAtStation = () => {
+    const currentStation = stationArrivalInfo?.currentStation;
+    setIsRidingCableCar(false);
+    setIsStationPromptActive(false);
+    setStationArrivalInfo(null);
+
+    if (currentStation) {
+      setPlayerTeleportTarget([...currentStation.stationPlatform]);
+      setActiveZone(currentStation.stationId);
+      if (currentStation.stationId !== 'sanctuary') {
+        setIsDrawerOpen(true);
+      } else {
+        setIsDrawerOpen(false);
+      }
+    }
+  };
+
   // Keyboard navigation & Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Station Prompt active shortcuts
+      if (isStationPromptActive && stationArrivalInfo) {
+        if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleExitAtStation();
+          return;
+        }
+        if (e.key === 'c' || e.key === 'C' || e.key === 'Enter') {
+          e.preventDefault();
+          handleContinueNextDestination();
+          return;
+        }
+        if (e.key === '1') {
+          setCableCarSpeed(1);
+          return;
+        }
+        if (e.key === '2') {
+          setCableCarSpeed(2);
+          return;
+        }
+        if (e.key === '3') {
+          setCableCarSpeed(4);
+          return;
+        }
+      }
+
+      // Cable Car Speed shortcuts while riding
+      if (isRidingCableCar) {
+        if (e.key === '1') {
+          setCableCarSpeed(1);
+          return;
+        }
+        if (e.key === '2') {
+          setCableCarSpeed(2);
+          return;
+        }
+        if (e.key === '3') {
+          setCableCarSpeed(4);
+          return;
+        }
+      }
+
       if (e.key === 'Escape') {
+        if (isStationPromptActive) {
+          handleContinueNextDestination();
+          return;
+        }
         if (isRidingCableCar) {
           setIsRidingCableCar(false);
           return;
@@ -91,7 +173,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedProjectId, isIndexOpen, isDrawerOpen, isRidingCableCar]);
+  }, [selectedProjectId, isIndexOpen, isDrawerOpen, isRidingCableCar, isStationPromptActive, stationArrivalInfo]);
 
   const handleSelectZone = (zoneId: string) => {
     setActiveZone(zoneId);
@@ -122,6 +204,11 @@ export function App() {
         isRidingCableCar={isRidingCableCar}
         onToggleRideCableCar={setIsRidingCableCar}
         onCableCarStationName={setCableCarStationName}
+        cableCarSpeed={cableCarSpeed}
+        isStationPromptActive={isStationPromptActive}
+        onStationArrival={handleStationArrival}
+        continueNudge={continueNudge}
+        teleportTarget={playerTeleportTarget}
       />
 
       {/* Persistent HUD Top Header (with Day / Night Theme Toggle) */}
@@ -136,6 +223,7 @@ export function App() {
           setSelectedProjectId(null);
           setIsDrawerOpen(false);
           setIsRidingCableCar(false);
+          setIsStationPromptActive(false);
         }}
       />
 
@@ -160,6 +248,36 @@ export function App() {
             <span className="transit-station">{cableCarStationName}</span>
             <span className="transit-route">Route: FADHI'S WORLD ➔ About Me (Pavilion) ➔ Experience (Valley Bridge)</span>
           </div>
+
+          {/* Interactive Speed Option Controller */}
+          <div className="transit-speed-selector">
+            <span className="transit-speed-tag">SPEED:</span>
+            <button
+              type="button"
+              className={`transit-speed-pill ${cableCarSpeed === 1 ? 'active' : ''}`}
+              onClick={() => setCableCarSpeed(1)}
+              title="1x Scenic Cruise [Key 1]"
+            >
+              1x
+            </button>
+            <button
+              type="button"
+              className={`transit-speed-pill ${cableCarSpeed === 2 ? 'active' : ''}`}
+              onClick={() => setCableCarSpeed(2)}
+              title="2x Fast Travel [Key 2]"
+            >
+              2x
+            </button>
+            <button
+              type="button"
+              className={`transit-speed-pill ${cableCarSpeed === 4 ? 'active' : ''}`}
+              onClick={() => setCableCarSpeed(4)}
+              title="4x Express Shuttle [Key 3]"
+            >
+              4x
+            </button>
+          </div>
+
           <button
             type="button"
             className="btn-transit-exit"
@@ -168,6 +286,87 @@ export function App() {
           >
             <span>Exit to Ground Walk [E]</span>
           </button>
+        </div>
+      )}
+
+      {/* Station Arrival Decision Prompt Modal (Exit or Next Destination + Speed Option) */}
+      {isRidingCableCar && isStationPromptActive && stationArrivalInfo && (
+        <div className="station-arrival-modal-backdrop">
+          <div className="station-arrival-card animate-slide-up">
+            <div className="station-modal-badge">
+              <span className="station-badge-icon">🚉</span>
+              <span className="station-badge-text">STATION ARRIVAL</span>
+            </div>
+
+            <h2 className="station-modal-title">{stationArrivalInfo.currentStation.name}</h2>
+            <p className="station-modal-desc">{stationArrivalInfo.currentStation.description}</p>
+
+            <div className="station-next-destination-box">
+              <div className="next-dest-header">
+                <span className="next-dest-label">NEXT DESTINATION</span>
+                <span className="next-dest-arrow">➔</span>
+              </div>
+              <div className="next-dest-name">{stationArrivalInfo.nextStation.name}</div>
+              <div className="next-dest-sub">{stationArrivalInfo.nextStation.description}</div>
+            </div>
+
+            {/* Cable Car Speed Option Pills */}
+            <div className="station-speed-selector">
+              <span className="speed-control-label">⚡ Transit Speed Option:</span>
+              <div className="speed-pills-row">
+                <button
+                  type="button"
+                  className={`speed-option-btn ${cableCarSpeed === 1 ? 'active' : ''}`}
+                  onClick={() => setCableCarSpeed(1)}
+                >
+                  <span className="speed-tag">1x</span>
+                  <span className="speed-name">Scenic Cruise [1]</span>
+                </button>
+                <button
+                  type="button"
+                  className={`speed-option-btn ${cableCarSpeed === 2 ? 'active' : ''}`}
+                  onClick={() => setCableCarSpeed(2)}
+                >
+                  <span className="speed-tag">2x</span>
+                  <span className="speed-name">Fast Travel [2]</span>
+                </button>
+                <button
+                  type="button"
+                  className={`speed-option-btn ${cableCarSpeed === 4 ? 'active' : ''}`}
+                  onClick={() => setCableCarSpeed(4)}
+                >
+                  <span className="speed-tag">4x</span>
+                  <span className="speed-name">Express Shuttle [3]</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Decision Actions: Exit at Station or Continue to Next Destination */}
+            <div className="station-modal-actions">
+              <button
+                type="button"
+                className="btn-station-exit"
+                onClick={handleExitAtStation}
+                title="Step off cable car to explore this station on foot"
+              >
+                <span className="action-icon">🚶</span>
+                <span className="action-text">Exit & Explore Station [E]</span>
+              </button>
+              <button
+                type="button"
+                className="btn-station-continue"
+                onClick={handleContinueNextDestination}
+                title="Stay on cable car and glide to the next station"
+              >
+                <span className="action-text">Continue to Next Destination [C]</span>
+                <span className="action-icon">➔</span>
+              </button>
+            </div>
+
+            <div className="station-modal-hint">
+              <span>Shortcuts: Press <strong>[E]</strong> to Exit • <strong>[C]</strong> to Continue • <strong>[1, 2, 3]</strong> for Speed</span>
+            </div>
+          </div>
         </div>
       )}
 

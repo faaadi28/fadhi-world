@@ -15,6 +15,7 @@ import { ToriiGate, SakuraTree, PineTree, CyberMonolith, ContactShrine } from '.
 import { PlayerController } from './PlayerController';
 import type { LandmarkTarget } from './PlayerController';
 import { CableCarSystem } from './CableCarSystem';
+import type { CableCarSpeed, StationArrivalInfo } from './CableCarSystem';
 import { TraditionalCobbleLanterns } from './TraditionalCobbleLanterns';
 import { ZoneSignboards } from './ZoneSignboards';
 
@@ -73,6 +74,11 @@ interface ZenWorldProps {
   isRidingCableCar?: boolean;
   onToggleRideCableCar?: (riding: boolean) => void;
   onCableCarStationName?: (name: string) => void;
+  cableCarSpeed?: CableCarSpeed;
+  isStationPromptActive?: boolean;
+  onStationArrival?: (info: StationArrivalInfo) => void;
+  continueNudge?: number;
+  teleportTarget?: [number, number, number] | null;
 }
 
 export const ZenWorld = ({
@@ -88,7 +94,12 @@ export const ZenWorld = ({
   virtualInput,
   isRidingCableCar = false,
   onToggleRideCableCar,
-  onCableCarStationName
+  onCableCarStationName,
+  cableCarSpeed = 1,
+  isStationPromptActive = false,
+  onStationArrival,
+  continueNudge = 0,
+  teleportTarget
 }: ZenWorldProps) => {
   const [cabinPos, setCabinPos] = useState<THREE.Vector3 | null>(null);
 
@@ -128,6 +139,8 @@ export const ZenWorld = ({
           isRidingCableCar={isRidingCableCar}
           onToggleRideCableCar={onToggleRideCableCar}
           cableCarPos={cabinPos}
+          teleportTarget={teleportTarget}
+          isStationPromptActive={isStationPromptActive}
         />
 
         {/* Scenic Aerial Cable Car System (Welcome Plaza -> About Me -> Experience) */}
@@ -139,6 +152,10 @@ export const ZenWorld = ({
             onCableCarStationName?.(stationName);
           }}
           playerNearStation={activeZone}
+          speedMultiplier={cableCarSpeed}
+          isStationPromptActive={isStationPromptActive}
+          onStationArrival={onStationArrival}
+          continueNudge={continueNudge}
         />
 
         {/* Expansive 160-Unit Open World Terrain */}

@@ -31,6 +31,8 @@ interface PlayerControllerProps {
   isRidingCableCar?: boolean;
   onToggleRideCableCar?: (riding: boolean) => void;
   cableCarPos?: THREE.Vector3 | null;
+  teleportTarget?: [number, number, number] | null;
+  isStationPromptActive?: boolean;
 }
 
 export const PlayerController = ({
@@ -41,7 +43,9 @@ export const PlayerController = ({
   virtualInput,
   isRidingCableCar = false,
   onToggleRideCableCar,
-  cableCarPos
+  cableCarPos,
+  teleportTarget,
+  isStationPromptActive = false
 }: PlayerControllerProps) => {
   const { camera, gl } = useThree();
 
@@ -51,6 +55,18 @@ export const PlayerController = ({
   const playerHeading = useRef(Math.PI); // Facing inward toward gate
   const isGrounded = useRef(true);
   const [isFirstPerson, setIsFirstPerson] = useState(false);
+
+  // Handle direct platform teleportation (e.g. stepping off at a station)
+  useEffect(() => {
+    if (teleportTarget) {
+      playerPos.current.set(teleportTarget[0], teleportTarget[1], teleportTarget[2]);
+      playerVelocity.current.set(0, 0, 0);
+      isGrounded.current = true;
+      if (avatarRef.current) {
+        avatarRef.current.position.set(teleportTarget[0], teleportTarget[1], teleportTarget[2]);
+      }
+    }
+  }, [teleportTarget]);
 
   // Camera Orbit state
   const cameraAngles = useRef({ yaw: Math.PI, pitch: 0.32 });
@@ -82,6 +98,8 @@ export const PlayerController = ({
       // Interact with nearby landmark or Cable Car with 'E' or Enter
       if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
         if (isRidingCableCar) {
+          // If station prompt is active, let App.tsx handle exit or continue
+          if (isStationPromptActive) return;
           onToggleRideCableCar?.(false);
           return;
         }
@@ -106,7 +124,7 @@ export const PlayerController = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [onInteractLandmark, isRidingCableCar, onToggleRideCableCar]);
+  }, [onInteractLandmark, isRidingCableCar, onToggleRideCableCar, isStationPromptActive]);
 
   // Pointer Drag & Mouse Look listeners
   useEffect(() => {
