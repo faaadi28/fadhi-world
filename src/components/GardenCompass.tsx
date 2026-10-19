@@ -1,12 +1,13 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Compass } from 'lucide-react';
 import { PORTFOLIO_DATA } from '../data/portfolioData';
 
 interface GardenCompassProps {
   activeZone: string;
   onSelectZone: (zoneId: string) => void;
+  onOpenVillageMap?: () => void;
 }
 
-export const GardenCompass = ({ activeZone, onSelectZone }: GardenCompassProps) => {
+export const GardenCompass = ({ activeZone, onSelectZone, onOpenVillageMap }: GardenCompassProps) => {
   const currentIndex = PORTFOLIO_DATA.gardenZones.findIndex((z) => z.id === activeZone);
   const safeIndex = currentIndex === -1 ? 0 : currentIndex;
 
@@ -22,6 +23,20 @@ export const GardenCompass = ({ activeZone, onSelectZone }: GardenCompassProps) 
 
   return (
     <nav className="garden-compass" aria-label="Garden Landmarks Navigation">
+      {/* Village Map Trigger Button on Compass */}
+      <button
+        type="button"
+        className="compass-map-trigger-btn"
+        onClick={onOpenVillageMap}
+        title="Open Village Map of all zones [Press M]"
+        aria-label="Open Village Map of all zones"
+      >
+        <Compass size={17} className="compass-spin-icon" />
+        <span className="compass-map-label">Village Map</span>
+      </button>
+
+      <div className="compass-divider" />
+
       <button
         type="button"
         className="compass-nav-btn"

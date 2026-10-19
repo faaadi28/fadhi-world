@@ -2,6 +2,7 @@ import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import { getTerrainHeight } from './terrainUtils';
 
 export type CableCarSpeed = 1 | 2 | 4;
 
@@ -20,41 +21,88 @@ export interface StationArrivalInfo {
   nextStation: CableCarWaypoint;
 }
 
-// 3 Connected Stations along the aerial cable:
-// 1. Welcome Plaza (Start/Main Gateway)
-// 2. Lakeside Pavilion (About Me)
-// 3. Grand Valley Bridge (Experience)
+/**
+ * 8 Connected Stations along the aerial cable encircling all 8 garden zones:
+ * 1. Sanctuary Gate (Torii Portal)
+ * 2. Lakeside Pavilion (About Me)
+ * 3. Project Archipelago (Featured Works)
+ * 4. Innovation Meadow (Core Skills)
+ * 5. Moonlit Bridge (Career Experience)
+ * 6. Knowledge Summit (Education)
+ * 7. Cybersecurity Bastion (Security Labs)
+ * 8. Communications Outpost (Connect Hub)
+ */
 export const CABLE_CAR_STATIONS: CableCarWaypoint[] = [
   {
-    name: "FADHI'S WORLD Station",
+    name: "01. FADHI'S WORLD Station",
     stationId: 'sanctuary',
-    position: [6, 7.5, 36],
-    stationPlatform: [6, 0.4, 36],
-    description: "Welcome Gateway • Entry into Fadhi's World Zen 3D Universe",
+    position: [5, 7.5, 40],
+    stationPlatform: [5, 0.4, 40],
+    description: "Welcome Gateway Portal • Main entry into Fadhi's World",
     t: 0.0
   },
   {
-    name: 'Lakeside Pavilion Station (About Me)',
+    name: '02. Lakeside Pavilion Station',
     stationId: 'about',
-    position: [36, 8.2, 14],
-    stationPlatform: [36, 0.5, 14],
-    description: "About Abdulla • Engineering mindset, skills, bio & vision",
-    t: 0.3333
+    position: [36, 8.0, 22],
+    stationPlatform: [36, 0.5, 22],
+    description: 'About Abdulla • Physics roots, developer background & vision',
+    t: 0.125
   },
   {
-    name: 'Valley Bridge Station (Experience)',
+    name: '03. Project Archipelago Station',
+    stationId: 'projects',
+    position: [36, 7.8, 0],
+    stationPlatform: [36, 0.4, 0],
+    description: 'Featured Works • Live web platforms, Tagspot, and live demos',
+    t: 0.250
+  },
+  {
+    name: '04. Innovation Meadow Station',
+    stationId: 'skills',
+    position: [26, 8.2, -22],
+    stationPlatform: [26, 0.6, -22],
+    description: 'Technical Matrix • Full-stack engineering & cybersecurity',
+    t: 0.375
+  },
+  {
+    name: '05. Valley Bridge Station',
     stationId: 'experience',
-    position: [4, 9.2, -34],
-    stationPlatform: [4, 1.4, -34],
-    description: "Career & Experience • Milestones, leadership & tech achievements",
-    t: 0.6667
+    position: [4, 9.0, -36],
+    stationPlatform: [4, 1.4, -36],
+    description: 'Career & Experience • Milestones, leadership & tech achievements',
+    t: 0.500
+  },
+  {
+    name: '06. Knowledge Summit Station',
+    stationId: 'education',
+    position: [-28, 9.2, -24],
+    stationPlatform: [-28, 1.5, -24],
+    description: 'Academic Background • Master of Computer Applications & Physics',
+    t: 0.625
+  },
+  {
+    name: '07. Cyber Bastion Station',
+    stationId: 'labs',
+    position: [-38, 8.5, 0],
+    stationPlatform: [-38, 1.2, 0],
+    description: 'Security Labs • Penetration testing, CTFs & isolated rigs',
+    t: 0.750
+  },
+  {
+    name: '08. Communications Outpost Station',
+    stationId: 'contact',
+    position: [-30, 7.8, 28],
+    stationPlatform: [-30, 0.4, 28],
+    description: 'Direct Contact • Inquiries, social profiles & verified resume',
+    t: 0.875
   }
 ];
 
 interface CableCarSystemProps {
   isRiding: boolean;
   onToggleRide: (riding: boolean) => void;
-  onCabinPositionUpdate?: (pos: THREE.Vector3, currentStationName: string) => void;
+  onCabinPositionUpdate?: (pos: THREE.Vector3, currentStationName: string, headingY?: number) => void;
   playerNearStation: string | null;
   speedMultiplier?: CableCarSpeed;
   isStationPromptActive?: boolean;
@@ -78,28 +126,48 @@ export const CableCarSystem = ({
   const lastStationTriggeredRef = useRef<number | null>(null);
   const wasRidingRef = useRef(isRiding);
 
-  // Define 3D Catmull-Rom aerial cable curve through the 3 stations + towers
-  const cableCurve = useMemo(() => {
-    const p1 = new THREE.Vector3(6, 7.5, 36);   // Station 1: Welcome Plaza
-    const t1 = new THREE.Vector3(22, 13.5, 26); // Tower 1
-    const p2 = new THREE.Vector3(36, 8.2, 14);  // Station 2: About Me (Pavilion)
-    const t2 = new THREE.Vector3(24, 14.2, -10);// Tower 2
-    const p3 = new THREE.Vector3(4, 9.2, -34);  // Station 3: Experience (Bridge)
-    const t3 = new THREE.Vector3(-14, 13.0, 0); // Tower 3 (Loop back across lake)
+  // 16 3D points forming a closed aerial cable circuit connecting all 8 stations with towers
+  const { cableCurve, cableTubeGeometry, pylonTowers } = useMemo(() => {
+    const points = [
+      new THREE.Vector3(5, 7.5, 40),     // Station 1: First Gate
+      new THREE.Vector3(22, 11.5, 33),   // Tower 1-2
+      new THREE.Vector3(36, 8.0, 22),    // Station 2: Pavilion
+      new THREE.Vector3(38, 11.0, 11),   // Tower 2-3
+      new THREE.Vector3(36, 7.8, 0),     // Station 3: Projects
+      new THREE.Vector3(32, 11.5, -12),  // Tower 3-4
+      new THREE.Vector3(26, 8.2, -22),   // Station 4: Skills
+      new THREE.Vector3(16, 12.0, -32),  // Tower 4-5
+      new THREE.Vector3(4, 9.0, -36),    // Station 5: Bridge
+      new THREE.Vector3(-14, 12.5, -32), // Tower 5-6
+      new THREE.Vector3(-28, 9.2, -24),  // Station 6: Summit
+      new THREE.Vector3(-35, 12.0, -12), // Tower 6-7
+      new THREE.Vector3(-38, 8.5, 0),    // Station 7: Bastion
+      new THREE.Vector3(-36, 11.5, 15),  // Tower 7-8
+      new THREE.Vector3(-30, 7.8, 28),   // Station 8: Outpost
+      new THREE.Vector3(-16, 11.0, 36),  // Tower 8-1
+    ];
 
-    // Closed loop circuit: Welcome -> About Me -> Experience -> Return
-    return new THREE.CatmullRomCurve3([p1, t1, p2, t2, p3, t3], true, 'centripetal', 0.15);
+    const curve = new THREE.CatmullRomCurve3(points, true, 'centripetal', 0.15);
+    const tubeGeo = new THREE.TubeGeometry(curve, 240, 0.05, 8, true);
+
+    const towers = [
+      { pos: [22, 0, 33] as [number, number, number], height: 11.8 },
+      { pos: [38, 0, 11] as [number, number, number], height: 11.2 },
+      { pos: [32, 0, -12] as [number, number, number], height: 11.8 },
+      { pos: [16, 0, -32] as [number, number, number], height: 12.2 },
+      { pos: [-14, 0, -32] as [number, number, number], height: 12.8 },
+      { pos: [-35, 0, -12] as [number, number, number], height: 12.2 },
+      { pos: [-36, 0, 15] as [number, number, number], height: 11.8 },
+      { pos: [-16, 0, 36] as [number, number, number], height: 11.2 },
+    ];
+
+    return { cableCurve: curve, cableTubeGeometry: tubeGeo, pylonTowers: towers };
   }, []);
 
-  // Cable geometry
-  const cableTubeGeometry = useMemo(() => {
-    return new THREE.TubeGeometry(cableCurve, 160, 0.05, 8, true);
-  }, [cableCurve]);
-
-  // If user chooses to continue to next destination, advance past threshold
+  // When passenger clicks "Continue to Next Destination", nudge safely past current station
   useEffect(() => {
     if (continueNudge > 0) {
-      progressRef.current = (progressRef.current + 0.014) % 1.0;
+      progressRef.current = (progressRef.current + 0.02) % 1.0;
     }
   }, [continueNudge]);
 
@@ -109,7 +177,7 @@ export const CableCarSystem = ({
       const stIdx = CABLE_CAR_STATIONS.findIndex((s) => s.stationId === playerNearStation);
       if (stIdx !== -1) {
         const stationT = CABLE_CAR_STATIONS[stIdx].t;
-        progressRef.current = (stationT + 0.008) % 1.0;
+        progressRef.current = (stationT + 0.005) % 1.0;
         lastStationTriggeredRef.current = stIdx;
       }
     }
@@ -118,7 +186,7 @@ export const CableCarSystem = ({
 
   const handleDirectBoard = (idx: number) => {
     const stationT = CABLE_CAR_STATIONS[idx].t;
-    progressRef.current = (stationT + 0.008) % 1.0;
+    progressRef.current = (stationT + 0.005) % 1.0;
     lastStationTriggeredRef.current = idx;
     onToggleRide(true);
   };
@@ -151,8 +219,38 @@ export const CableCarSystem = ({
     }
 
     // Traverse speed scaled by rider's speed multiplier (1x, 2x, or 4x)
-    const baseSpeed = 0.014 * (speedMultiplier || 1);
-    progressRef.current = (progressRef.current + delta * baseSpeed) % 1.0;
+    const baseSpeed = 0.012 * (speedMultiplier || 1);
+    const step = delta * baseSpeed;
+    const prevT = progressRef.current;
+    let nextT = (prevT + step) % 1.0;
+
+    // Station Arrival Detection along the 8-station circuit:
+    // Check if movement from prevT to nextT crossed any station's t
+    let arrivedStationIdx: number | null = null;
+
+    for (let i = 0; i < CABLE_CAR_STATIONS.length; i++) {
+      const stT = CABLE_CAR_STATIONS[i].t;
+      let crossed = false;
+
+      if (stT === 0.0) {
+        // Wrap around 1.0 -> 0.0
+        if (nextT < prevT && (prevT > 0.96 || nextT >= 0.0)) {
+          crossed = true;
+        }
+      } else {
+        if (prevT < stT && nextT >= stT) {
+          crossed = true;
+        }
+      }
+
+      if (crossed && lastStationTriggeredRef.current !== i) {
+        arrivedStationIdx = i;
+        nextT = stT; // Snap precisely to station position
+        break;
+      }
+    }
+
+    progressRef.current = nextT;
 
     const currentT = progressRef.current;
     const pos = cableCurve.getPointAt(currentT);
@@ -165,99 +263,67 @@ export const CableCarSystem = ({
     const headingY = Math.atan2(tangent.x, tangent.z);
     cabinRef.current.rotation.set(0, headingY, 0);
 
-    // Station Arrival Detection along the closed loop:
-    // Station 0: t ~ 0.0 (and wraps at 1.0)
-    // Station 1: t ~ 0.3333
-    // Station 2: t ~ 0.6667
-    let arrivedStationIdx: number | null = null;
-    if (currentT < 0.007 || currentT > 0.993) {
-      arrivedStationIdx = 0;
-    } else if (Math.abs(currentT - 0.3333) < 0.007) {
-      arrivedStationIdx = 1;
-    } else if (Math.abs(currentT - 0.6667) < 0.007) {
-      arrivedStationIdx = 2;
-    }
-
-    let stationName = 'En Route Aerial Transit';
+    let stationName = 'En Route Aerial Circuit';
 
     if (arrivedStationIdx !== null) {
       const station = CABLE_CAR_STATIONS[arrivedStationIdx];
       stationName = station.name;
+      lastStationTriggeredRef.current = arrivedStationIdx;
 
-      if (lastStationTriggeredRef.current !== arrivedStationIdx) {
-        lastStationTriggeredRef.current = arrivedStationIdx;
-
-        if (isRiding) {
-          // Passenger in transit has arrived at a station!
-          const nextIdx = (arrivedStationIdx + 1) % CABLE_CAR_STATIONS.length;
-          onStationArrival?.({
-            stationIndex: arrivedStationIdx,
-            currentStation: station,
-            nextStation: CABLE_CAR_STATIONS[nextIdx]
-          });
-        } else {
-          // Empty cabin pauses for 4.2 seconds
-          pauseTimerRef.current = 4.2;
-        }
+      if (isRiding) {
+        // Passenger in transit has arrived at a station!
+        const nextIdx = (arrivedStationIdx + 1) % CABLE_CAR_STATIONS.length;
+        onStationArrival?.({
+          stationIndex: arrivedStationIdx,
+          currentStation: station,
+          nextStation: CABLE_CAR_STATIONS[nextIdx]
+        });
+      } else {
+        // Empty cabin pauses for 3.5 seconds
+        pauseTimerRef.current = 3.5;
       }
     } else {
-      // Reset trigger lock once cabin has moved away from all stations
-      const dist0 = Math.min(currentT, 1.0 - currentT);
-      const dist1 = Math.abs(currentT - 0.3333);
-      const dist2 = Math.abs(currentT - 0.6667);
-      if (dist0 > 0.025 && dist1 > 0.025 && dist2 > 0.025) {
-        lastStationTriggeredRef.current = null;
+      // Clear trigger lock once cabin has moved away from the triggered station
+      const lastIdx = lastStationTriggeredRef.current;
+      if (lastIdx !== null) {
+        const lastT = CABLE_CAR_STATIONS[lastIdx].t;
+        const dist = Math.min(Math.abs(currentT - lastT), 1.0 - Math.abs(currentT - lastT));
+        if (dist > 0.035) {
+          lastStationTriggeredRef.current = null;
+        }
       }
     }
 
-    // Notify player controller of cabin position when riding
+    // Notify player controller of cabin position and heading when riding
     if (onCabinPositionUpdate) {
-      onCabinPositionUpdate(cabinRef.current.position, stationName);
+      onCabinPositionUpdate(cabinRef.current.position, stationName, headingY);
     }
   });
 
   return (
-    <group>
+    <group name="cable-car-system">
       {/* 1. Heavy Aerial Steel Cable Loop */}
       <mesh geometry={cableTubeGeometry}>
         <meshStandardMaterial color="#2d3339" metalness={0.85} roughness={0.3} />
       </mesh>
 
-      {/* 2. Steel Suspension Pylon Towers */}
-      <CableTower position={[22, 0.3, 26]} height={14.5} />
-      <CableTower position={[24, 0.4, -10]} height={15.2} />
-      <CableTower position={[-14, 0.2, 0]} height={14.0} />
+      {/* 2. Steel Suspension Pylon Towers placed between stations */}
+      {pylonTowers.map((tower, idx) => (
+        <CableTower key={idx} position={tower.pos} height={tower.height} />
+      ))}
 
-      {/* 3. Station Platforms */}
-      {/* Station 1: FADHI'S WORLD Gateway */}
-      <StationPlatform
-        position={[6, 0.4, 36]}
-        name="FADHI'S WORLD Station"
-        subtitle="Route: To Lakeside Pavilion (About Me)"
-        isNear={playerNearStation === 'sanctuary'}
-        isRiding={isRiding}
-        onBoard={() => handleDirectBoard(0)}
-      />
-
-      {/* Station 2: Lakeside Pavilion (About Me) */}
-      <StationPlatform
-        position={[36, 0.5, 14]}
-        name="Lakeside Pavilion Station"
-        subtitle="About Me • Route: To Valley Bridge (Experience)"
-        isNear={playerNearStation === 'about'}
-        isRiding={isRiding}
-        onBoard={() => handleDirectBoard(1)}
-      />
-
-      {/* Station 3: Valley Bridge (Experience) */}
-      <StationPlatform
-        position={[4, 1.4, -34]}
-        name="Valley Bridge Station"
-        subtitle="Career & Experience • Route: Return to Welcome Plaza"
-        isNear={playerNearStation === 'experience'}
-        isRiding={isRiding}
-        onBoard={() => handleDirectBoard(2)}
-      />
+      {/* 3. 8 Station Boarding Platforms at All 8 Zones */}
+      {CABLE_CAR_STATIONS.map((station, idx) => (
+        <StationPlatform
+          key={station.stationId}
+          position={station.stationPlatform}
+          name={station.name}
+          subtitle={station.description}
+          isNear={playerNearStation === station.stationId}
+          isRiding={isRiding}
+          onBoard={() => handleDirectBoard(idx)}
+        />
+      ))}
 
       {/* 4. The 3D Cable Car Gondola Cabin */}
       <group ref={cabinRef}>
@@ -299,22 +365,19 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
 
         {/* Roof Mounting Base Plaque */}
         <mesh position={[0, 0.95, 0]} castShadow>
-          <boxGeometry args={[0.34, 0.08, 0.34]} />
-          <meshStandardMaterial color="#ba2e20" roughness={0.5} />
+          <boxGeometry args={[0.34, 0.08, 0.52]} />
+          <meshStandardMaterial color="#1a2026" roughness={0.7} />
         </mesh>
       </group>
 
-      {/* Main Gondola Body Shell (Solid, Non-Transparent) */}
-      {/* 1. Heavy Lower Chassis / Base Skirt */}
-      <mesh position={[0, -0.68, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.76, 0.16, 2.52]} />
-        <meshStandardMaterial color="#1a2026" roughness={0.85} metalness={0.4} />
-      </mesh>
-
-      {/* 2. Solid Opaque Lower Body Walls (Vermilion / Crimson Red) */}
+      {/* 2. Main Cabin Lower Hull Shell */}
       <mesh position={[0, -0.3, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.74, 0.62, 2.5]} />
-        <meshStandardMaterial color="#ba2e20" roughness={0.45} metalness={0.25} />
+        <boxGeometry args={[1.72, 0.58, 2.48]} />
+        <meshStandardMaterial
+          color="#ba2e20"
+          roughness={0.35}
+          metalness={0.2}
+        />
       </mesh>
 
       {/* Lower Protective Trim Rub-Strip */}
@@ -361,8 +424,7 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
         <meshStandardMaterial color="#1f252d" roughness={0.7} metalness={0.5} />
       </mesh>
 
-      {/* 4. Individual Clear Glass Window Panes (Recessed inside the solid frames) */}
-      {/* Left & Right Side Glass Panes */}
+      {/* 4. Clear Glass Window Panes */}
       <mesh position={[-0.83, 0.35, 0]}>
         <boxGeometry args={[0.02, 0.62, 2.36]} />
         <meshStandardMaterial
@@ -385,7 +447,6 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
           depthWrite={true}
         />
       </mesh>
-      {/* Front & Rear Window Glass Panes */}
       <mesh position={[0, 0.35, -1.2]}>
         <boxGeometry args={[1.6, 0.62, 0.02]} />
         <meshStandardMaterial
@@ -410,17 +471,14 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
       </mesh>
 
       {/* 5. Solid Opaque Roof Structure */}
-      {/* Roof Eaves Beam */}
       <mesh position={[0, 0.72, 0]} castShadow>
         <boxGeometry args={[1.82, 0.08, 2.58]} />
         <meshStandardMaterial color="#1a2026" roughness={0.8} metalness={0.4} />
       </mesh>
-      {/* Curved Aerodynamic Roof Cap */}
       <mesh position={[0, 0.82, 0]} castShadow>
         <boxGeometry args={[1.76, 0.14, 2.52]} />
         <meshStandardMaterial color="#ba2e20" roughness={0.5} metalness={0.2} />
       </mesh>
-      {/* Roof Center Ridge Bar */}
       <mesh position={[0, 0.91, 0]} castShadow>
         <boxGeometry args={[0.3, 0.06, 2.3]} />
         <meshStandardMaterial color="#1a2026" roughness={0.7} />
@@ -435,7 +493,6 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
         <boxGeometry args={[1.45, 0.32, 0.45]} />
         <meshStandardMaterial color="#36251b" roughness={0.85} />
       </mesh>
-      {/* Interior Floor Mat */}
       <mesh position={[0, -0.58, 0]}>
         <boxGeometry args={[1.4, 0.02, 2.2]} />
         <meshStandardMaterial color="#283038" roughness={0.9} />
@@ -443,6 +500,9 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
 
       {/* Soft Interior Warm Glow Lamp */}
       <pointLight position={[0, 0.55, 0]} color="#fff3db" intensity={1.1} distance={4.0} />
+
+      {/* 7. Passenger Seated Inside the Cabin (Visible through panoramic glass windows) */}
+      {isRiding && <SeatedPassengerAvatar />}
 
       {/* Interactive 3D Label & Disembark Button */}
       {isRiding ? (
@@ -474,11 +534,121 @@ const CableCarCabin = ({ isRiding, onExit }: { isRiding: boolean; onExit: () => 
 };
 
 // ==========================================
+// Seated Passenger Traveler Avatar inside Cable Car
+// ==========================================
+const SeatedPassengerAvatar = () => {
+  return (
+    <group position={[0, -0.22, -0.68]} rotation={[0, 0, 0]}>
+      {/* 1. Pelvis / Seat Contact */}
+      <mesh position={[0, 0.08, 0]} castShadow>
+        <boxGeometry args={[0.34, 0.16, 0.28]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+
+      {/* 2. Thighs / Lap extending forward towards +Z */}
+      <mesh position={[-0.11, 0.06, 0.18]} castShadow>
+        <boxGeometry args={[0.13, 0.13, 0.3]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+      <mesh position={[0.11, 0.06, 0.18]} castShadow>
+        <boxGeometry args={[0.13, 0.13, 0.3]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+
+      {/* 3. Lower Legs / Shins descending to floor */}
+      <mesh position={[-0.11, -0.16, 0.32]} castShadow>
+        <boxGeometry args={[0.12, 0.3, 0.12]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+      <mesh position={[0.11, -0.16, 0.32]} castShadow>
+        <boxGeometry args={[0.12, 0.3, 0.12]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+
+      {/* 4. Boots resting flat on wooden cabin floor */}
+      <mesh position={[-0.11, -0.32, 0.36]} castShadow>
+        <boxGeometry args={[0.13, 0.08, 0.2]} />
+        <meshStandardMaterial color="#211d1a" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.11, -0.32, 0.36]} castShadow>
+        <boxGeometry args={[0.13, 0.08, 0.2]} />
+        <meshStandardMaterial color="#211d1a" roughness={0.8} />
+      </mesh>
+
+      {/* 5. Upright Torso & Traveler Robe */}
+      <mesh position={[0, 0.32, 0]} castShadow>
+        <cylinderGeometry args={[0.18, 0.22, 0.38, 10]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+
+      {/* 6. Crimson Chest Sash / Belt */}
+      <mesh position={[0, 0.2, 0]}>
+        <cylinderGeometry args={[0.2, 0.21, 0.08, 10]} />
+        <meshStandardMaterial color="#b83328" roughness={0.6} />
+      </mesh>
+
+      {/* 7. Crimson Shoulder Scarf / Cloak */}
+      <mesh position={[0, 0.48, 0]} castShadow>
+        <cylinderGeometry args={[0.24, 0.2, 0.16, 10]} />
+        <meshStandardMaterial color="#b83328" roughness={0.7} />
+      </mesh>
+
+      {/* 8. Resting Arms & Hands on Knees */}
+      <mesh position={[-0.2, 0.16, 0.14]} rotation={[0.4, 0, -0.2]} castShadow>
+        <boxGeometry args={[0.08, 0.22, 0.08]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+      <mesh position={[0.2, 0.16, 0.14]} rotation={[0.4, 0, 0.2]} castShadow>
+        <boxGeometry args={[0.08, 0.22, 0.08]} />
+        <meshStandardMaterial color="#26353d" roughness={0.7} />
+      </mesh>
+      {/* Hands */}
+      <mesh position={[-0.14, 0.1, 0.26]}>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshStandardMaterial color="#d4b595" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.14, 0.1, 0.26]}>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshStandardMaterial color="#d4b595" roughness={0.6} />
+      </mesh>
+
+      {/* 9. Head */}
+      <mesh position={[0, 0.62, 0]} castShadow>
+        <sphereGeometry args={[0.14, 12, 12]} />
+        <meshStandardMaterial color="#d4b595" roughness={0.6} />
+      </mesh>
+
+      {/* 10. Conical Straw Traveler Hat (Kasa) */}
+      <mesh position={[0, 0.74, 0]} castShadow>
+        <coneGeometry args={[0.38, 0.15, 12]} />
+        <meshStandardMaterial color="#a88b63" roughness={0.85} />
+      </mesh>
+
+      {/* 11. Hip Lantern sitting on bench beside the traveler */}
+      <group position={[0.34, 0.06, 0]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.07, 0.09, 0.18, 8]} />
+          <meshStandardMaterial
+            color="#ffeed1"
+            emissive="#ffb347"
+            emissiveIntensity={1.9}
+            roughness={0.4}
+          />
+        </mesh>
+        <pointLight color="#ffb347" intensity={0.9} distance={2.5} decay={2} />
+      </group>
+    </group>
+  );
+};
+
+// ==========================================
 // Steel Support Pylon Tower
 // ==========================================
-const CableTower = ({ position, height = 15 }: { position: [number, number, number]; height?: number }) => {
+const CableTower = ({ position, height = 12 }: { position: [number, number, number]; height?: number }) => {
+  const groundY = useMemo(() => getTerrainHeight(position[0], position[2]), [position]);
+
   return (
-    <group position={position}>
+    <group position={[position[0], groundY, position[2]]}>
       {/* Concrete Foundation Base */}
       <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
         <boxGeometry args={[2.4, 0.6, 2.4]} />
@@ -530,8 +700,10 @@ const StationPlatform = ({
   isRiding,
   onBoard
 }: StationPlatformProps) => {
+  const groundY = useMemo(() => getTerrainHeight(position[0], position[2]), [position]);
+
   return (
-    <group position={position}>
+    <group position={[position[0], groundY, position[2]]}>
       {/* Stone Foundation Stairs */}
       <mesh position={[0, 0.18, 0]} receiveShadow castShadow>
         <boxGeometry args={[4.2, 0.36, 4.2]} />
@@ -584,7 +756,7 @@ const StationPlatform = ({
                 onBoard();
               }}
             >
-              Board Cable Car [E]
+              Board Cable Car [C]
             </button>
           )}
         </div>

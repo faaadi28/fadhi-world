@@ -102,7 +102,9 @@ export const ZenWorld = ({
   continueNudge = 0,
   teleportTarget
 }: ZenWorldProps) => {
-  const [cabinPos, setCabinPos] = useState<THREE.Vector3 | null>(null);
+  const cabinPosRef = useRef(new THREE.Vector3(5, 5.45, 40));
+  const cabinHeadingRef = useRef(0);
+  const lastReportedStationRef = useRef('');
 
   return (
     <div className="canvas-container">
@@ -130,6 +132,25 @@ export const ZenWorld = ({
           />
         )}
 
+        {/* Scenic Aerial Cable Car System (Circuit Around All 8 Garden Zones) */}
+        <CableCarSystem
+          isRiding={isRidingCableCar}
+          onToggleRide={(riding) => onToggleRideCableCar?.(riding)}
+          onCabinPositionUpdate={(pos, stationName, headingY) => {
+            cabinPosRef.current.copy(pos);
+            if (headingY !== undefined) cabinHeadingRef.current = headingY;
+            if (stationName !== lastReportedStationRef.current) {
+              lastReportedStationRef.current = stationName;
+              onCableCarStationName?.(stationName);
+            }
+          }}
+          playerNearStation={activeZone}
+          speedMultiplier={cableCarSpeed}
+          isStationPromptActive={isStationPromptActive}
+          onStationArrival={onStationArrival}
+          continueNudge={continueNudge}
+        />
+
         {/* Free Roam Open World Player Avatar & Controller */}
         <PlayerController
           isFreeRoam={isFreeRoam}
@@ -139,24 +160,10 @@ export const ZenWorld = ({
           virtualInput={virtualInput}
           isRidingCableCar={isRidingCableCar}
           onToggleRideCableCar={onToggleRideCableCar}
-          cableCarPos={cabinPos}
+          cableCarPosRef={cabinPosRef}
+          cableCarHeadingRef={cabinHeadingRef}
           teleportTarget={teleportTarget}
           isStationPromptActive={isStationPromptActive}
-        />
-
-        {/* Scenic Aerial Cable Car System (Welcome Plaza -> About Me -> Experience) */}
-        <CableCarSystem
-          isRiding={isRidingCableCar}
-          onToggleRide={(riding) => onToggleRideCableCar?.(riding)}
-          onCabinPositionUpdate={(pos, stationName) => {
-            setCabinPos(pos.clone());
-            onCableCarStationName?.(stationName);
-          }}
-          playerNearStation={activeZone}
-          speedMultiplier={cableCarSpeed}
-          isStationPromptActive={isStationPromptActive}
-          onStationArrival={onStationArrival}
-          continueNudge={continueNudge}
         />
 
         {/* Expansive 160-Unit Open World Terrain */}

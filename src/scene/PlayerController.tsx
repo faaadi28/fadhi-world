@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { getTerrainHeight, getBridgeHeight, getPavilionHeight } from './terrainUtils';
+import { CABLE_CAR_STATIONS } from './CableCarSystem';
 
 export interface LandmarkTarget {
   id: string;
@@ -107,6 +108,8 @@ interface PlayerControllerProps {
   isRidingCableCar?: boolean;
   onToggleRideCableCar?: (riding: boolean) => void;
   cableCarPos?: THREE.Vector3 | null;
+  cableCarPosRef?: React.MutableRefObject<THREE.Vector3>;
+  cableCarHeadingRef?: React.MutableRefObject<number>;
   teleportTarget?: [number, number, number] | null;
   isStationPromptActive?: boolean;
 }
@@ -120,6 +123,8 @@ export const PlayerController = ({
   isRidingCableCar = false,
   onToggleRideCableCar,
   cableCarPos,
+  cableCarPosRef,
+  cableCarHeadingRef,
   teleportTarget,
   isStationPromptActive = false
 }: PlayerControllerProps) => {
@@ -259,10 +264,14 @@ export const PlayerController = ({
   useFrame((_, delta) => {
     if (!isFreeRoam) return;
 
-    // A. If Riding Cable Car: smoothly follow cabin high above ground
+    // A. If Riding Cable Car: smoothly and rigidly follow cabin without jitter or screen shake
     if (isRidingCableCar) {
-      if (cableCarPos) {
-        playerPos.current.copy(cableCarPos);
+      const cPos = cableCarPosRef ? cableCarPosRef.current : cableCarPos;
+      if (cPos) {
+        playerPos.current.copy(cPos);
+      }
+      if (cableCarHeadingRef && cableCarHeadingRef.current !== undefined) {
+        playerHeading.current = cableCarHeadingRef.current;
       }
       if (avatarRef.current) {
         avatarRef.current.position.set(
@@ -272,21 +281,31 @@ export const PlayerController = ({
         );
       }
 
-      // Smooth aerial camera follow
-      const headHeight = 0.9;
-      const targetLookAt = new THREE.Vector3(
-        playerPos.current.x,
-        playerPos.current.y + headHeight,
-        playerPos.current.z
-      );
+      if (isFirstPerson) {
+        // First-Person View: Camera placed right at passenger eye level inside the glass cabin
+        const eyeY = playerPos.current.y + 0.40;
+        camera.position.set(playerPos.current.x, eyeY, playerPos.current.z);
 
-      const dist = isFirstPerson ? 0.2 : 5.8;
-      const camX = playerPos.current.x - Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * dist;
-      const camY = playerPos.current.y + headHeight + Math.sin(cameraAngles.current.pitch) * dist;
-      const camZ = playerPos.current.z - Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * dist;
+        const lookDist = 6.0;
+        const lookTarget = new THREE.Vector3(
+          playerPos.current.x + Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * lookDist,
+          eyeY + Math.sin(cameraAngles.current.pitch) * lookDist,
+          playerPos.current.z + Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * lookDist
+        );
+        camera.lookAt(lookTarget);
+      } else {
+        // Third-Person View: Rigidly locked to cabin at constant distance - completely eliminates screen shake
+        const dist = cameraDistance.current || 5.8;
+        const targetY = playerPos.current.y + 0.35;
+        const targetLookAt = new THREE.Vector3(playerPos.current.x, targetY, playerPos.current.z);
 
-      camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.16);
-      camera.lookAt(targetLookAt);
+        const camX = playerPos.current.x - Math.sin(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * dist;
+        const camY = targetY + Math.sin(cameraAngles.current.pitch) * dist;
+        const camZ = playerPos.current.z - Math.cos(cameraAngles.current.yaw) * Math.cos(cameraAngles.current.pitch) * dist;
+
+        camera.position.set(camX, camY, camZ);
+        camera.lookAt(targetLookAt);
+      }
 
       onPlayerPositionChange?.({
         x: playerPos.current.x,
@@ -429,12 +448,6 @@ export const PlayerController = ({
     }
 
     // 7. Proximity Landmark & Cable Car Station Detection
-    const CABLE_STATIONS = [
-      { id: 'sanctuary', name: "Cable Car Station (FADHI'S WORLD)", subtitle: 'Route: To Lakeside Pavilion (About Me)', position: [6, 0.4, 36], radius: 7.0 },
-      { id: 'about', name: 'Cable Car Station (Lakeside Pavilion)', subtitle: 'Route: To Valley Bridge (Experience)', position: [36, 0.5, 14], radius: 7.0 },
-      { id: 'experience', name: 'Cable Car Station (Valley Bridge)', subtitle: 'Route: Return to FADHI\'S WORLD', position: [4, 1.4, -34], radius: 7.0 }
-    ];
-
     // Check world landmarks first so the player always gets the zone arrival prompt
     let closestLandmark: LandmarkTarget | null = null;
     let minDist = 999;
@@ -447,16 +460,21 @@ export const PlayerController = ({
       }
     }
 
-    // Check if player is also near an aerial cable car station
+    // Check if player is near any of the 8 aerial cable car boarding stations
     let nearStation: string | null = null;
-    for (const cs of CABLE_STATIONS) {
-      const d = Math.hypot(playerPos.current.x - cs.position[0], playerPos.current.z - cs.position[2]);
-      if (d < cs.radius) {
-        nearStation = cs.id;
+    for (const cs of CABLE_CAR_STATIONS) {
+      const d = Math.hypot(playerPos.current.x - cs.stationPlatform[0], playerPos.current.z - cs.stationPlatform[2]);
+      if (d < 9.0) {
+        nearStation = cs.stationId;
         break;
       }
     }
     nearStationRef.current = nearStation;
+
+    // If player is directly at a cable car platform but slightly outside the landmark center, associate with that landmark
+    if (!closestLandmark && nearStation) {
+      closestLandmark = LANDMARK_TARGETS.find((lm) => lm.id === nearStation) || null;
+    }
 
     const reportedLandmark: LandmarkTarget | null = closestLandmark
       ? { ...closestLandmark, hasCableCarStation: Boolean(nearStation) }
@@ -477,8 +495,8 @@ export const PlayerController = ({
 
   return (
     <group>
-      {/* 3D Traveler Avatar (Hidden in First-Person View) */}
-      {!isFirstPerson && (
+      {/* 3D Traveler Avatar (Hidden in First-Person View OR when riding cable car, since passenger is seated inside cabin) */}
+      {!isFirstPerson && !isRidingCableCar && (
         <group ref={avatarRef}>
           <TravelerAvatar />
         </group>

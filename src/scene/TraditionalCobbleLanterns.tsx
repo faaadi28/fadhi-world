@@ -91,11 +91,16 @@ export const TraditionalCobbleLanterns = ({ timeOfDay }: TraditionalCobbleLanter
     { pos: [-22.0, 0.40, 34.0], rotY: 0.0, type: 'low_ground', hasPointLight: false },
 
     // -------------------------------------------------------------------------
-    // 3. CABLE CAR BOARDING STATIONS
+    // 3. CABLE CAR BOARDING STATIONS (All 8 Zones)
     // -------------------------------------------------------------------------
-    { pos: [8.5, 0.42, 36.0], rotY: -0.4, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [38.5, 0.50, 16.0], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [6.5, 1.45, -33.5], rotY: 0.2, type: 'tall_pagoda', hasPointLight: true }
+    { pos: [7.4, 0.42, 39.0], rotY: -0.4, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [38.4, 0.50, 20.8], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [38.4, 0.42, 1.2], rotY: 0.4, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [28.2, 0.62, -20.8], rotY: 0.2, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [6.2, 1.45, -34.8], rotY: 0.2, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-30.4, 1.55, -22.8], rotY: -0.3, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-40.2, 1.22, 1.2], rotY: -0.5, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-32.4, 0.42, 26.8], rotY: -0.2, type: 'tall_pagoda', hasPointLight: true }
   ], []);
 
   // Soft atmospheric candle flame flicker

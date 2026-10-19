@@ -13,6 +13,7 @@ interface OpenWorldControlsProps {
   isRidingCableCar?: boolean;
   onToggleRideCableCar?: (riding: boolean) => void;
   isDrawerOpen?: boolean;
+  onOpenVillageMap?: () => void;
 }
 
 export const OpenWorldControls = ({
@@ -24,7 +25,8 @@ export const OpenWorldControls = ({
   onVirtualMove,
   isRidingCableCar = false,
   onToggleRideCableCar,
-  isDrawerOpen = false
+  isDrawerOpen = false,
+  onOpenVillageMap
 }: OpenWorldControlsProps) => {
   const [showMinimap, setShowMinimap] = useState(true);
   const [isSprinting, setIsSprinting] = useState(false);
@@ -235,16 +237,42 @@ export const OpenWorldControls = ({
 
       {/* 4. Mini-Radar / World Map Widget (Top Left or Collapsible) */}
       <div className="radar-container">
-        <div className="radar-header" onClick={() => setShowMinimap((prev) => !prev)}>
-          <Navigation size={14} className="radar-icon" />
-          <span className="radar-title">World Radar</span>
-          <span className="radar-coords">
-            {playerPosition.x.toFixed(1)}, {playerPosition.z.toFixed(1)}
-          </span>
+        <div className="radar-header">
+          <div
+            className="radar-title-box"
+            onClick={() => setShowMinimap((prev) => !prev)}
+            role="button"
+            tabIndex={0}
+            title="Toggle Mini-Radar visibility"
+          >
+            <Navigation size={14} className="radar-icon" />
+            <span className="radar-title">World Radar</span>
+            <span className="radar-coords">
+              {playerPosition.x.toFixed(1)}, {playerPosition.z.toFixed(1)}
+            </span>
+          </div>
+          {onOpenVillageMap && (
+            <button
+              type="button"
+              className="radar-map-expand-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenVillageMap();
+              }}
+              title="Open Full Village Map & All Zones [Press M]"
+            >
+              <span>Map [M]</span>
+            </button>
+          )}
         </div>
 
         {showMinimap && (
-          <div className="radar-circle">
+          <div
+            className="radar-circle"
+            onClick={onOpenVillageMap}
+            title="Click to open Full Village Map of all zones [Press M]"
+            style={{ cursor: onOpenVillageMap ? 'pointer' : 'default' }}
+          >
             {/* Cardinal Directions */}
             <span className="radar-cardinal cardinal-n">N</span>
             <span className="radar-cardinal cardinal-s">S</span>

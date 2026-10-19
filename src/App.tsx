@@ -8,6 +8,7 @@ import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AccessibleIndex } from './components/AccessibleIndex';
 import { OpenWorldControls } from './components/OpenWorldControls';
 import { CinematicTourHUD } from './components/CinematicTourHUD';
+import { VillageMapModal } from './components/VillageMapModal';
 import type { LandmarkTarget } from './scene/PlayerController';
 import type { CableCarSpeed, StationArrivalInfo } from './scene/CableCarSystem';
 import { PORTFOLIO_DATA } from './data/portfolioData';
@@ -35,6 +36,7 @@ export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isIndexOpen, setIsIndexOpen] = useState<boolean>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isVillageMapOpen, setIsVillageMapOpen] = useState<boolean>(false);
 
   const lastScrollTime = useRef<number>(0);
 
@@ -103,11 +105,34 @@ export function App() {
     }
   };
 
+  const keyboardStateRef = useRef({
+    isStationPromptActive,
+    stationArrivalInfo,
+    isRidingCableCar,
+    selectedProjectId,
+    isIndexOpen,
+    isDrawerOpen,
+    isVillageMapOpen,
+    cableCarSpeed
+  });
+  keyboardStateRef.current = {
+    isStationPromptActive,
+    stationArrivalInfo,
+    isRidingCableCar,
+    selectedProjectId,
+    isIndexOpen,
+    isDrawerOpen,
+    isVillageMapOpen,
+    cableCarSpeed
+  };
+
   // Keyboard navigation & Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const state = keyboardStateRef.current;
+
       // Station Prompt active shortcuts
-      if (isStationPromptActive && stationArrivalInfo) {
+      if (state.isStationPromptActive && state.stationArrivalInfo) {
         if (e.key === 'e' || e.key === 'E') {
           e.preventDefault();
           handleExitAtStation();
@@ -133,7 +158,7 @@ export function App() {
       }
 
       // Cable Car Speed shortcuts while riding
-      if (isRidingCableCar) {
+      if (state.isRidingCableCar) {
         if (e.key === '1') {
           setCableCarSpeed(1);
           return;
@@ -148,24 +173,33 @@ export function App() {
         }
       }
 
+      if (e.key === 'm' || e.key === 'M') {
+        setIsVillageMapOpen((prev) => !prev);
+        return;
+      }
+
       if (e.key === 'Escape') {
-        if (isStationPromptActive) {
+        if (state.isVillageMapOpen) {
+          setIsVillageMapOpen(false);
+          return;
+        }
+        if (state.isStationPromptActive) {
           handleContinueNextDestination();
           return;
         }
-        if (isRidingCableCar) {
+        if (state.isRidingCableCar) {
           setIsRidingCableCar(false);
           return;
         }
-        if (selectedProjectId) {
+        if (state.selectedProjectId) {
           setSelectedProjectId(null);
           return;
         }
-        if (isIndexOpen) {
+        if (state.isIndexOpen) {
           setIsIndexOpen(false);
           return;
         }
-        if (isDrawerOpen) {
+        if (state.isDrawerOpen) {
           setIsDrawerOpen(false);
           return;
         }
@@ -174,7 +208,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedProjectId, isIndexOpen, isDrawerOpen, isRidingCableCar, isStationPromptActive, stationArrivalInfo]);
+  }, []);
 
   const handleSwitchToWalkAtZone = (zoneId: string) => {
     const targetMap: Record<string, [number, number, number]> = {
@@ -254,6 +288,7 @@ export function App() {
         isRidingCableCar={isRidingCableCar}
         onToggleRideCableCar={setIsRidingCableCar}
         isDrawerOpen={isDrawerOpen}
+        onOpenVillageMap={() => setIsVillageMapOpen(true)}
       />
 
       {/* Cable Car Transit HUD Overlay when Riding */}
@@ -263,7 +298,7 @@ export function App() {
           <div className="transit-info">
             <span className="transit-tag">AERIAL CABLE CAR TRANSIT</span>
             <span className="transit-station">{cableCarStationName}</span>
-            <span className="transit-route">Route: FADHI'S WORLD ➔ About Me (Pavilion) ➔ Experience (Valley Bridge)</span>
+            <span className="transit-route">Route: All 8 Zones Circuit (Sanctuary ➔ Pavilion ➔ Projects ➔ Skills ➔ Bridge ➔ Summit ➔ Bastion ➔ Outpost)</span>
           </div>
 
           {/* Interactive Speed Option Controller */}
@@ -437,12 +472,27 @@ export function App() {
       <GardenCompass
         activeZone={activeZone}
         onSelectZone={handleSelectZone}
+        onOpenVillageMap={() => setIsVillageMapOpen(true)}
       />
 
       {/* Deep Project Detail Inspection Modal */}
       <ProjectDetailModal
         projectId={selectedProjectId}
         onClose={() => setSelectedProjectId(null)}
+      />
+
+      {/* Full Village Map & Zone Directory Modal */}
+      <VillageMapModal
+        isOpen={isVillageMapOpen}
+        onClose={() => setIsVillageMapOpen(false)}
+        activeZone={activeZone}
+        playerPosition={playerPosition}
+        onFastTravelToZone={(zoneId) => {
+          handleSwitchToWalkAtZone(zoneId);
+        }}
+        onOpenZoneDetails={(zoneId) => {
+          handleSelectZone(zoneId);
+        }}
       />
 
       {/* Full Conventional Accessible Navigation Drawer */}
