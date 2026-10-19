@@ -17,12 +17,12 @@ interface StoneData {
 }
 
 const STONES: StoneData[] = [
-  { id: 'tagspot', label: 'Tagspot', sublabel: 'Travel Discovery Platform', position: [-16, 0.15, 20], scale: [1.6, 0.32, 1.6], rotation: 0.2 },
-  { id: 'popular-junction', label: 'Popular Junction', sublabel: 'Business Directory Ecosystem', position: [-18, 0.15, 12], scale: [1.6, 0.32, 1.6], rotation: -0.3 },
-  { id: 'connect-campus', label: 'ConnectCampus', sublabel: 'Career Gateway & R&D', position: [-19, 0.15, 4], scale: [1.6, 0.32, 1.6], rotation: 0.4 },
-  { id: 'cyber-lab', label: 'Security Home Lab', sublabel: 'Isolated Network Defense', position: [-19, 0.15, -4], scale: [1.6, 0.32, 1.6], rotation: -0.2 },
-  { id: 'thm-bruteit', label: 'TryHackMe Labs', sublabel: 'Recon & CTF Rooms', position: [-18, 0.15, -12], scale: [1.6, 0.32, 1.6], rotation: 0.3 },
-  { id: 'cryptozombies', label: 'CryptoZombies', sublabel: 'Solidity & Web3 Contracts', position: [-16, 0.15, -20], scale: [1.6, 0.32, 1.6], rotation: -0.4 },
+  { id: 'tagspot', label: 'Tagspot', sublabel: 'Travel Discovery Platform', position: [30, 0.25, 6], scale: [1.6, 0.32, 1.6], rotation: 0.2 },
+  { id: 'popular-junction', label: 'Popular Junction', sublabel: 'Business Directory Ecosystem', position: [32, 0.25, 2], scale: [1.6, 0.32, 1.6], rotation: -0.3 },
+  { id: 'connect-campus', label: 'ConnectCampus', sublabel: 'Career Gateway & R&D', position: [33, 0.25, -2], scale: [1.6, 0.32, 1.6], rotation: 0.4 },
+  { id: 'cyber-lab', label: 'Security Home Lab', sublabel: 'Isolated Network Defense', position: [33, 0.25, -6], scale: [1.6, 0.32, 1.6], rotation: -0.2 },
+  { id: 'thm-bruteit', label: 'TryHackMe Labs', sublabel: 'Recon & CTF Rooms', position: [31, 0.25, -10], scale: [1.6, 0.32, 1.6], rotation: 0.3 },
+  { id: 'cryptozombies', label: 'CryptoZombies', sublabel: 'Solidity & Web3 Contracts', position: [28, 0.25, -14], scale: [1.6, 0.32, 1.6], rotation: -0.4 },
 ];
 
 export const SteppingStones = ({ onSelectStone, activeStoneId }: SteppingStonesProps) => {

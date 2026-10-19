@@ -7,6 +7,7 @@ import { SectionDrawer } from './components/SectionDrawer';
 import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AccessibleIndex } from './components/AccessibleIndex';
 import { OpenWorldControls } from './components/OpenWorldControls';
+import { CinematicTourHUD } from './components/CinematicTourHUD';
 import type { LandmarkTarget } from './scene/PlayerController';
 import type { CableCarSpeed, StationArrivalInfo } from './scene/CableCarSystem';
 import { PORTFOLIO_DATA } from './data/portfolioData';
@@ -175,13 +176,28 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProjectId, isIndexOpen, isDrawerOpen, isRidingCableCar, isStationPromptActive, stationArrivalInfo]);
 
+  const handleSwitchToWalkAtZone = (zoneId: string) => {
+    const targetMap: Record<string, [number, number, number]> = {
+      sanctuary: [0, 0.4, 42],
+      about: [34, 0.5, 20],
+      projects: [34, 0.4, 0],
+      skills: [24, 0.6, -22],
+      experience: [0, 1.4, -38],
+      education: [-26, 1.5, -24],
+      labs: [-36, 1.2, 0],
+      contact: [-28, 0.4, 28],
+    };
+    if (targetMap[zoneId]) {
+      setPlayerTeleportTarget(targetMap[zoneId]);
+    }
+    setActiveZone(zoneId);
+    setIsFreeRoam(true);
+    setIsRidingCableCar(false);
+  };
+
   const handleSelectZone = (zoneId: string) => {
     setActiveZone(zoneId);
-    if (zoneId !== 'sanctuary') {
-      setIsDrawerOpen(true);
-    } else {
-      setIsDrawerOpen(false);
-    }
+    setIsDrawerOpen(true);
   };
 
   return (
@@ -237,6 +253,7 @@ export function App() {
         onVirtualMove={setVirtualInput}
         isRidingCableCar={isRidingCableCar}
         onToggleRideCableCar={setIsRidingCableCar}
+        isDrawerOpen={isDrawerOpen}
       />
 
       {/* Cable Car Transit HUD Overlay when Riding */}
@@ -370,8 +387,8 @@ export function App() {
         </div>
       )}
 
-      {/* Opening Screen Hero Overlay (Shows on start, dismissable on click or walk) */}
-      {activeZone === 'sanctuary' && !isDrawerOpen && (
+      {/* Opening Screen Hero Overlay (Shows on start in free-roam, dismissable on click or walk) */}
+      {isFreeRoam && activeZone === 'sanctuary' && !isDrawerOpen && (
         <HeroOverlay
           onExplore={() => {
             setIsFreeRoam(true);
@@ -388,6 +405,21 @@ export function App() {
         />
       )}
 
+      {/* Automated Cinematic Tour Showcase Controller & HUD (Active during Cinematic Tour) */}
+      {!isFreeRoam && (
+        <CinematicTourHUD
+          isFreeRoam={isFreeRoam}
+          activeZone={activeZone}
+          onSelectZone={setActiveZone}
+          onEnterZoneDetails={(zoneId) => {
+            setActiveZone(zoneId);
+            setIsDrawerOpen(true);
+          }}
+          onSwitchToWalk={handleSwitchToWalkAtZone}
+          isDrawerOpen={isDrawerOpen}
+        />
+      )}
+
       {/* Interactive Landmark Drawer */}
       {isDrawerOpen && (
         <SectionDrawer
@@ -397,6 +429,7 @@ export function App() {
             if (!isFreeRoam) setActiveZone('sanctuary');
           }}
           onSelectProject={(id) => setSelectedProjectId(id)}
+          onSelectZone={handleSelectZone}
         />
       )}
 

@@ -5,21 +5,97 @@ import { getTerrainHeight, getBridgeHeight, getPavilionHeight } from './terrainU
 
 export interface LandmarkTarget {
   id: string;
+  zoneNumber: string;
+  zoneTag: string;
   name: string;
   subtitle: string;
+  description: string;
   position: [number, number, number];
   radius: number;
+  hasCableCarStation?: boolean;
 }
 
 export const LANDMARK_TARGETS: LandmarkTarget[] = [
-  { id: 'sanctuary', name: "FADHI'S WORLD", subtitle: 'First Gate & Entrance', position: [0, 0.4, 42], radius: 6.5 },
-  { id: 'about', name: 'Lakeside Pavilion', subtitle: 'About Abdulla', position: [42, 0.5, 8], radius: 7.0 },
-  { id: 'projects', name: 'Project Archipelago', subtitle: 'Live Platforms & Web3', position: [-18, 0.2, 0], radius: 10.0 },
-  { id: 'skills', name: 'Innovation Meadow', subtitle: 'Skills & Tech Matrix', position: [36, 0.5, 42], radius: 7.0 },
-  { id: 'experience', name: 'Grand Valley Bridge', subtitle: 'Career & Milestones', position: [0, 1.4, -40], radius: 7.5 },
-  { id: 'education', name: 'The Knowledge Summit', subtitle: 'MCA & Physics Foundations', position: [45, 3.8, -38], radius: 7.5 },
-  { id: 'labs', name: 'Cybersecurity Bastion', subtitle: 'CTFs & Isolated Labs', position: [-42, 1.5, -34], radius: 7.5 },
-  { id: 'contact', name: 'Communications Outpost', subtitle: 'Get In Touch', position: [-38, 0.4, 38], radius: 6.5 },
+  {
+    id: 'sanctuary',
+    zoneNumber: '01',
+    zoneTag: 'Zone 01 — First Gate',
+    name: "FADHI'S WORLD",
+    subtitle: 'Grand Entrance & Welcome Hub',
+    description: "Official 3D Universe of Abdulla Fadhi K. — Gateway to all 8 interactive garden zones.",
+    position: [0, 0.4, 42],
+    radius: 9.5
+  },
+  {
+    id: 'about',
+    zoneNumber: '02',
+    zoneTag: 'Zone 02 — About Me',
+    name: 'The Lakeside Pavilion',
+    subtitle: 'About Abdulla & Philosophy',
+    description: 'Personal background, physics roots, and first-principles mindset & bio.',
+    position: [34, 0.5, 20],
+    radius: 9.5
+  },
+  {
+    id: 'projects',
+    zoneNumber: '03',
+    zoneTag: 'Zone 03 — Featured Works',
+    name: 'The Project Archipelago',
+    subtitle: 'Live Platforms & Web Applications',
+    description: 'Live production platforms: Tagspot, Popular Junction, ConnectCampus, and security labs.',
+    position: [34, 0.4, 0],
+    radius: 12.0
+  },
+  {
+    id: 'skills',
+    zoneNumber: '04',
+    zoneTag: 'Zone 04 — Core Skills',
+    name: 'The Innovation Meadow',
+    subtitle: 'Technical Skills & Matrix',
+    description: 'Full-stack engineering, Linux systems, defensive security, and modern UI/UX proficiencies.',
+    position: [24, 0.6, -22],
+    radius: 9.5
+  },
+  {
+    id: 'experience',
+    zoneNumber: '05',
+    zoneTag: 'Zone 05 — Experience',
+    name: 'The Grand Valley Bridge',
+    subtitle: 'Career Milestones & Roles',
+    description: 'Professional front-end web engineering, physics mentorship, and collaborative git workflows.',
+    position: [0, 1.4, -38],
+    radius: 10.0
+  },
+  {
+    id: 'education',
+    zoneNumber: '06',
+    zoneTag: 'Zone 06 — Education',
+    name: 'The Knowledge Summit',
+    subtitle: 'Degrees & Scientific Foundations',
+    description: 'Master of Computer Applications (MCA) & B.Sc. (Hons) Physics at hill observatory.',
+    position: [-26, 1.5, -24],
+    radius: 10.0
+  },
+  {
+    id: 'labs',
+    zoneNumber: '07',
+    zoneTag: 'Zone 07 — Security Labs',
+    name: 'The Cybersecurity Bastion',
+    subtitle: 'Penetration Testing & Tools',
+    description: 'Isolated attack surfaces, network enumeration, Nmap, Wireshark, and CTF research.',
+    position: [-36, 1.2, 0],
+    radius: 10.0
+  },
+  {
+    id: 'contact',
+    zoneNumber: '08',
+    zoneTag: 'Zone 08 — Connect',
+    name: 'The Communications Outpost',
+    subtitle: 'Direct Contact & Resume',
+    description: 'Direct contact hub, social verification, verified profiles, and curriculum vitae download.',
+    position: [-28, 0.4, 28],
+    radius: 9.5
+  },
 ];
 
 interface PlayerControllerProps {
@@ -95,16 +171,24 @@ export const PlayerController = ({
         setIsFirstPerson((prev) => !prev);
       }
 
-      // Interact with nearby landmark or Cable Car with 'E' or Enter
-      if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+      // Cable car boarding/exiting toggle with 'C'
+      if (e.key === 'c' || e.key === 'C') {
         if (isRidingCableCar) {
-          // If station prompt is active, let App.tsx handle exit or continue
-          if (isStationPromptActive) return;
-          onToggleRideCableCar?.(false);
+          if (!isStationPromptActive) onToggleRideCableCar?.(false);
           return;
         }
         if (nearStationRef.current) {
           onToggleRideCableCar?.(true);
+          return;
+        }
+      }
+
+      // Interact with nearby landmark to inspect / enter zone page with 'E' or Enter
+      if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+        if (isRidingCableCar) {
+          // If riding cable car and station prompt is active, let App.tsx handle it
+          if (isStationPromptActive) return;
+          onToggleRideCableCar?.(false);
           return;
         }
         if (activeNearbyLandmark.current) {
@@ -346,46 +430,41 @@ export const PlayerController = ({
 
     // 7. Proximity Landmark & Cable Car Station Detection
     const CABLE_STATIONS = [
-      { id: 'sanctuary', name: "Cable Car Station (FADHI'S WORLD)", subtitle: 'Route: To Lakeside Pavilion (About Me)', position: [6, 0.4, 36], radius: 6.0 },
-      { id: 'about', name: 'Cable Car Station (Lakeside Pavilion)', subtitle: 'Route: To Valley Bridge (Experience)', position: [36, 0.5, 14], radius: 6.0 },
-      { id: 'experience', name: 'Cable Car Station (Valley Bridge)', subtitle: 'Route: Return to FADHI\'S WORLD', position: [4, 1.4, -34], radius: 6.0 }
+      { id: 'sanctuary', name: "Cable Car Station (FADHI'S WORLD)", subtitle: 'Route: To Lakeside Pavilion (About Me)', position: [6, 0.4, 36], radius: 7.0 },
+      { id: 'about', name: 'Cable Car Station (Lakeside Pavilion)', subtitle: 'Route: To Valley Bridge (Experience)', position: [36, 0.5, 14], radius: 7.0 },
+      { id: 'experience', name: 'Cable Car Station (Valley Bridge)', subtitle: 'Route: Return to FADHI\'S WORLD', position: [4, 1.4, -34], radius: 7.0 }
     ];
 
+    // Check world landmarks first so the player always gets the zone arrival prompt
     let closestLandmark: LandmarkTarget | null = null;
     let minDist = 999;
-    let nearStation: string | null = null;
 
-    // Check cable car stations first:
+    for (const lm of LANDMARK_TARGETS) {
+      const d = Math.hypot(playerPos.current.x - lm.position[0], playerPos.current.z - lm.position[2]);
+      if (d < lm.radius && d < minDist) {
+        minDist = d;
+        closestLandmark = lm;
+      }
+    }
+
+    // Check if player is also near an aerial cable car station
+    let nearStation: string | null = null;
     for (const cs of CABLE_STATIONS) {
       const d = Math.hypot(playerPos.current.x - cs.position[0], playerPos.current.z - cs.position[2]);
-      if (d < cs.radius && d < minDist) {
-        minDist = d;
+      if (d < cs.radius) {
         nearStation = cs.id;
-        closestLandmark = {
-          id: cs.id,
-          name: cs.name,
-          subtitle: `Press [E] to Board Cable Car (${cs.subtitle})`,
-          position: cs.position as [number, number, number],
-          radius: cs.radius
-        };
+        break;
       }
     }
     nearStationRef.current = nearStation;
 
-    // Check world landmarks:
-    if (!nearStation) {
-      for (const lm of LANDMARK_TARGETS) {
-        const d = Math.hypot(playerPos.current.x - lm.position[0], playerPos.current.z - lm.position[2]);
-        if (d < lm.radius && d < minDist) {
-          minDist = d;
-          closestLandmark = lm;
-        }
-      }
-    }
+    const reportedLandmark: LandmarkTarget | null = closestLandmark
+      ? { ...closestLandmark, hasCableCarStation: Boolean(nearStation) }
+      : null;
 
-    if (closestLandmark?.id !== activeNearbyLandmark.current?.id) {
-      activeNearbyLandmark.current = closestLandmark;
-      onNearLandmark?.(closestLandmark);
+    if (reportedLandmark?.id !== activeNearbyLandmark.current?.id) {
+      activeNearbyLandmark.current = reportedLandmark;
+      onNearLandmark?.(reportedLandmark);
     }
 
     // 8. Report Player Coordinates to Minimap / Radar

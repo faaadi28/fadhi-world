@@ -50,60 +50,48 @@ export const TraditionalCobbleLanterns = ({ timeOfDay }: TraditionalCobbleLanter
     { pos: [2.6, 0.38, 20], rotY: -0.4, type: 'tall_pagoda', hasPointLight: false },
 
     // -------------------------------------------------------------------------
-    // 2. EAST LAKESIDE PROMENADE (Leading to About Me Pavilion [42, 8])
+    // 2. CIRCULAR LAKE PROMENADE & ZONE ENTRANCES
     // -------------------------------------------------------------------------
-    { pos: [7.5, 0.38, 21.5], rotY: 0.6, type: 'low_ground', hasPointLight: false },
-    { pos: [15.0, 0.38, 18.0], rotY: 0.8, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [22.5, 0.38, 14.5], rotY: 0.7, type: 'low_ground', hasPointLight: false },
-    { pos: [30.5, 0.42, 10.5], rotY: 0.9, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [37.0, 0.45, 7.5], rotY: 0.5, type: 'low_ground', hasPointLight: false },
+    // Zone 02: Lakeside Pavilion (East Shore)
+    { pos: [32.0, 0.48, 24.0], rotY: 0.6, type: 'low_ground', hasPointLight: false },
+    { pos: [38.0, 0.48, 16.0], rotY: 0.8, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [41.0, 0.48, 22.0], rotY: 0.2, type: 'tall_pagoda', hasPointLight: true },
 
-    // Pavilion Terrace Courtyard
-    { pos: [47.5, 0.48, 5.0], rotY: 0.2, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [48.0, 0.48, 13.5], rotY: -0.6, type: 'tall_pagoda', hasPointLight: false },
-    { pos: [36.5, 0.48, 2.5], rotY: 1.1, type: 'low_ground', hasPointLight: false },
+    // Zone 03: Project Archipelago (Waterfront Deck)
+    { pos: [36.5, 0.42, 6.0], rotY: 0.9, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [36.5, 0.42, -4.0], rotY: 0.7, type: 'low_ground', hasPointLight: false },
+    { pos: [32.0, 0.38, -12.0], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },
 
-    // -------------------------------------------------------------------------
-    // 3. GRAND VALLEY BRIDGE (North River Canyon)
-    // -------------------------------------------------------------------------
+    // Zone 04: Innovation Meadow (Northeast Line)
+    { pos: [26.0, 0.62, -18.0], rotY: -0.3, type: 'low_ground', hasPointLight: false },
+    { pos: [28.0, 0.65, -24.0], rotY: -0.5, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [18.0, 0.70, -28.0], rotY: -0.2, type: 'low_ground', hasPointLight: false },
+
+    // Zone 05: Grand Valley Moon Bridge (North)
     { pos: [-2.5, 0.68, -28.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
     { pos: [2.5, 0.68, -28.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: false },
-    { pos: [-2.6, 1.85, -40.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [2.6, 1.85, -40.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: false },
-    { pos: [-2.5, 0.68, -52.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [2.5, 0.68, -52.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: false },
+    { pos: [-2.6, 1.85, -39.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [2.6, 1.85, -39.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: false },
+    { pos: [-2.5, 0.68, -50.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [2.5, 0.68, -50.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: false },
+
+    // Zone 06: Knowledge Summit (Northwest Shore)
+    { pos: [-18.0, 0.95, -28.0], rotY: 0.4, type: 'low_ground', hasPointLight: false },
+    { pos: [-28.0, 1.50, -22.0], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-31.0, 1.60, -26.0], rotY: 0.6, type: 'tall_pagoda', hasPointLight: false },
+
+    // Zone 07: Security Bastion (West Shore)
+    { pos: [-37.0, 1.20, -6.0], rotY: 0.8, type: 'low_ground', hasPointLight: false },
+    { pos: [-38.5, 1.25, 2.0], rotY: 0.9, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-36.0, 1.15, 8.0], rotY: 0.7, type: 'low_ground', hasPointLight: false },
+
+    // Zone 08: Connection Shrine (Southwest Hub)
+    { pos: [-30.0, 0.42, 22.0], rotY: 0.0, type: 'low_ground', hasPointLight: false },
+    { pos: [-30.0, 0.45, 30.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
+    { pos: [-22.0, 0.40, 34.0], rotY: 0.0, type: 'low_ground', hasPointLight: false },
 
     // -------------------------------------------------------------------------
-    // 4. WATERFRONT ARCHIPELAGO & BOARDWALK ENTRANCE
-    // -------------------------------------------------------------------------
-    { pos: [-6.5, 0.38, 22.0], rotY: -0.5, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [-12.5, 0.34, 15.5], rotY: -0.7, type: 'low_ground', hasPointLight: false },
-    { pos: [-18.5, 0.30, 8.0], rotY: -0.8, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [-22.5, 0.28, 0.5], rotY: -0.9, type: 'low_ground', hasPointLight: false },
-
-    // -------------------------------------------------------------------------
-    // 5. NORTHWEST BASTION TRAIL (Leading to Cyber Fortress)
-    // -------------------------------------------------------------------------
-    { pos: [-16.0, 0.50, -8.0], rotY: 0.4, type: 'low_ground', hasPointLight: false },
-    { pos: [-26.0, 0.90, -18.0], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [-36.0, 1.30, -27.0], rotY: 0.6, type: 'tall_pagoda', hasPointLight: false },
-
-    // -------------------------------------------------------------------------
-    // 6. NORTHEAST MOUNTAIN TRAIL (Leading to Knowledge Summit)
-    // -------------------------------------------------------------------------
-    { pos: [33.0, 1.05, -6.0], rotY: -0.3, type: 'low_ground', hasPointLight: false },
-    { pos: [39.0, 2.10, -18.0], rotY: -0.4, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [44.0, 3.25, -30.0], rotY: -0.5, type: 'tall_pagoda', hasPointLight: false },
-
-    // -------------------------------------------------------------------------
-    // 7. SOUTHWEST TRAIL (Leading to Communications Outpost)
-    // -------------------------------------------------------------------------
-    { pos: [-11.0, 0.36, 38.0], rotY: 0.0, type: 'low_ground', hasPointLight: false },
-    { pos: [-22.0, 0.36, 38.0], rotY: 0.0, type: 'tall_pagoda', hasPointLight: true },
-    { pos: [-32.0, 0.36, 38.0], rotY: 0.0, type: 'low_ground', hasPointLight: false },
-
-    // -------------------------------------------------------------------------
-    // 8. CABLE CAR BOARDING STATIONS
+    // 3. CABLE CAR BOARDING STATIONS
     // -------------------------------------------------------------------------
     { pos: [8.5, 0.42, 36.0], rotY: -0.4, type: 'tall_pagoda', hasPointLight: true },
     { pos: [38.5, 0.50, 16.0], rotY: 0.5, type: 'tall_pagoda', hasPointLight: true },

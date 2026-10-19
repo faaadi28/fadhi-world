@@ -9,13 +9,14 @@ interface SectionDrawerProps {
   activeZone: string;
   onClose: () => void;
   onSelectProject: (projectId: string) => void;
+  onSelectZone?: (zoneId: string) => void;
 }
 
-export const SectionDrawer = ({ activeZone, onClose, onSelectProject }: SectionDrawerProps) => {
+export const SectionDrawer = ({ activeZone, onClose, onSelectProject, onSelectZone }: SectionDrawerProps) => {
   const currentZone = PORTFOLIO_DATA.gardenZones.find((z) => z.id === activeZone);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'web' | 'security' | 'concept' | 'blockchain'>('all');
 
-  if (!currentZone || activeZone === 'sanctuary') {
+  if (!currentZone) {
     return null;
   }
 
@@ -87,7 +88,71 @@ ${PORTFOLIO_DATA.skills.map(s => `- ${s.title}: ${s.skills.map(sk => sk.name).jo
       </div>
 
       <div className="drawer-body">
-        {/* ZONE 1: ABOUT (The Pavilion) */}
+        {/* ZONE 01: SANCTUARY / FIRST GATE */}
+        {activeZone === 'sanctuary' && (
+          <div className="drawer-section">
+            <div className="sanctuary-welcome-card">
+              <span className="sanctuary-badge">ZONE 01 • WELCOME HUB</span>
+              <h3 className="card-headline">Welcome to FADHI'S WORLD</h3>
+              <p className="narrative-text">
+                {PORTFOLIO_DATA.personal.headline}
+              </p>
+              <p className="sanctuary-tagline-text">
+                {PORTFOLIO_DATA.personal.tagline}
+              </p>
+            </div>
+
+            <div className="about-grid">
+              <div className="info-block">
+                <span className="info-label">Creator</span>
+                <span className="info-val">{PORTFOLIO_DATA.personal.name}</span>
+              </div>
+              <div className="info-block">
+                <span className="info-label">Base Location</span>
+                <span className="info-val">{PORTFOLIO_DATA.personal.location}</span>
+              </div>
+              <div className="info-block">
+                <span className="info-label">Direct Email</span>
+                <span className="info-val">{PORTFOLIO_DATA.personal.email}</span>
+              </div>
+              <div className="info-block">
+                <span className="info-label">Direct Phone</span>
+                <span className="info-val">{PORTFOLIO_DATA.personal.phone}</span>
+              </div>
+            </div>
+
+            <div className="sanctuary-zones-directory">
+              <h4 className="directory-heading">Garden Landmarks & Zones</h4>
+              <p className="directory-sub">Walk to any zone on foot or jump directly below:</p>
+              <div className="directory-grid">
+                {PORTFOLIO_DATA.gardenZones.map((z) => (
+                  <button
+                    key={z.id}
+                    type="button"
+                    className={`directory-zone-pill ${z.id === activeZone ? 'active' : ''}`}
+                    onClick={() => onSelectZone?.(z.id)}
+                  >
+                    <span className="dir-tag">{z.zoneTag}</span>
+                    <span className="dir-name">{z.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="resume-download-box">
+              <button
+                type="button"
+                className="btn-primary resume-btn"
+                onClick={handleDownloadResume}
+              >
+                <FileText size={18} />
+                <span>Download Curriculum Vitae (.md)</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ZONE 02: ABOUT (The Lakeside Pavilion) */}
         {activeZone === 'about' && (
           <div className="drawer-section">
             <div className="narrative-card">

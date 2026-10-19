@@ -18,6 +18,7 @@ import { CableCarSystem } from './CableCarSystem';
 import type { CableCarSpeed, StationArrivalInfo } from './CableCarSystem';
 import { TraditionalCobbleLanterns } from './TraditionalCobbleLanterns';
 import { ZoneSignboards } from './ZoneSignboards';
+import { ZonePathways } from './ZonePathways';
 
 export interface CameraViewpoint {
   position: THREE.Vector3;
@@ -27,36 +28,36 @@ export interface CameraViewpoint {
 // Spaciously calibrated cinematic viewpoints for each distinct world section
 export const VIEWPOINTS: Record<string, CameraViewpoint> = {
   sanctuary: {
-    position: new THREE.Vector3(0.0, 2.7, 49.5),
-    target: new THREE.Vector3(0.0, 2.3, 42.0)
+    position: new THREE.Vector3(0.0, 2.7, 50.0),
+    target: new THREE.Vector3(0.0, 2.2, 42.0)
   },
   about: {
-    position: new THREE.Vector3(32.0, 3.8, 18.0),
-    target: new THREE.Vector3(42.0, 1.8, 8.0)
+    position: new THREE.Vector3(26.0, 3.4, 21.0),
+    target: new THREE.Vector3(38.0, 1.8, 20.0)
   },
   projects: {
-    position: new THREE.Vector3(-10.0, 4.8, 12.0),
-    target: new THREE.Vector3(-18.0, 0.6, 0.0)
+    position: new THREE.Vector3(24.0, 3.5, 2.0),
+    target: new THREE.Vector3(34.0, 1.4, 0.0)
   },
   skills: {
-    position: new THREE.Vector3(26.0, 3.6, 48.0),
-    target: new THREE.Vector3(36.0, 1.2, 42.0)
+    position: new THREE.Vector3(18.0, 3.2, -18.0),
+    target: new THREE.Vector3(26.0, 1.6, -24.0)
   },
   experience: {
-    position: new THREE.Vector3(0.0, 5.2, -26.0),
-    target: new THREE.Vector3(0.0, 2.0, -40.0)
+    position: new THREE.Vector3(0.0, 3.8, -28.0),
+    target: new THREE.Vector3(0.0, 1.6, -39.0)
   },
   education: {
-    position: new THREE.Vector3(34.0, 6.5, -26.0),
-    target: new THREE.Vector3(45.0, 4.2, -38.0)
+    position: new THREE.Vector3(-19.0, 3.4, -19.0),
+    target: new THREE.Vector3(-28.0, 2.2, -26.0)
   },
   labs: {
-    position: new THREE.Vector3(-30.0, 4.2, -22.0),
-    target: new THREE.Vector3(-42.0, 2.0, -34.0)
+    position: new THREE.Vector3(-27.0, 3.4, 0.0),
+    target: new THREE.Vector3(-39.0, 1.8, 0.0)
   },
   contact: {
-    position: new THREE.Vector3(-28.0, 3.4, 44.0),
-    target: new THREE.Vector3(-38.0, 1.2, 38.0)
+    position: new THREE.Vector3(-21.0, 3.0, 23.0),
+    target: new THREE.Vector3(-31.0, 1.5, 29.0)
   }
 };
 
@@ -167,6 +168,9 @@ export const ZenWorld = ({
         {/* 3D Information Signboards Outside Each Zone Detailing What is There */}
         <ZoneSignboards onSelectZone={onSelectZone} activeZone={activeZone} />
 
+        {/* Connected circular path network + zone entrance beacons for newcomers */}
+        <ZonePathways timeOfDay={timeOfDay} />
+
         {/* Large Reflective Central Lake & River Surface */}
         <WaterSurface timeOfDay={timeOfDay} />
 
@@ -180,14 +184,34 @@ export const ZenWorld = ({
           onClick={() => onSelectZone('sanctuary')}
         />
 
-        {/* Section 02: The Lakeside Pavilion (East Shore Terrace) */}
+        {/* Section 02: The Lakeside Pavilion (East Shore Terrace - About Me) */}
         <Pavilion
-          position={[42, 0.45, 8]}
+          position={[38, 0.45, 20]}
           isActive={activeZone === 'about'}
           onClick={() => onSelectZone('about')}
         />
 
-        {/* Section 03: The Project Archipelago (Waterfront Boardwalk Islands) */}
+        {/* Section 03: The Project Archipelago (Waterfront Project Deck & Stepping Stones) */}
+        <group position={[35, 0.38, 0]}>
+          {/* Waterfront wooden deck & gravel base */}
+          <mesh position={[0, -0.06, 0]} receiveShadow castShadow>
+            <cylinderGeometry args={[4.4, 4.8, 0.28, 16]} />
+            <meshStandardMaterial color="#3a2f26" roughness={0.82} />
+          </mesh>
+          <mesh position={[0, 0.1, 0]} receiveShadow castShadow>
+            <cylinderGeometry args={[4.0, 4.3, 0.08, 16]} />
+            <meshStandardMaterial color="#2a2018" roughness={0.7} />
+          </mesh>
+          {/* Shoreline stone corner posts */}
+          <mesh position={[-2.6, 0.45, 1.8]} castShadow>
+            <boxGeometry args={[0.45, 0.85, 0.45]} />
+            <meshStandardMaterial color="#4f524e" roughness={0.85} />
+          </mesh>
+          <mesh position={[-2.6, 0.45, -1.8]} castShadow>
+            <boxGeometry args={[0.45, 0.85, 0.45]} />
+            <meshStandardMaterial color="#4f524e" roughness={0.85} />
+          </mesh>
+        </group>
         <SteppingStones
           activeStoneId={selectedProjectId}
           onSelectStone={(id) => {
@@ -196,69 +220,68 @@ export const ZenWorld = ({
           }}
         />
 
-        {/* Section 04: The Grand Valley Bridge (North River Canyon) */}
+        {/* Section 04: Innovation Meadow Monoliths (Northeast Skill Grove) */}
+        <InnovationGrove
+          position={[26, 0.6, -24]}
+          isActive={activeZone === 'skills'}
+          onClick={() => onSelectZone('skills')}
+        />
+
+        {/* Section 05: The Grand Valley Bridge (North River Canyon) */}
         <MoonBridge
-          position={[0, 0.7, -40]}
+          position={[0, 0.7, -39]}
           rotation={[0, 0, 0]}
           isActive={activeZone === 'experience'}
           onClick={() => onSelectZone('experience')}
         />
 
-        {/* Section 05: Cybersecurity Bastion & Fortress (Northwest Elevated Plateau) */}
-        <CyberMonolith
-          position={[-42, 1.5, -34]}
-          isActive={activeZone === 'labs'}
-          onClick={() => onSelectZone('labs')}
-        />
-        <StoneLantern
-          position={[-36, 1.2, -28]}
-          isActive={activeZone === 'labs'}
-          onClick={() => onSelectZone('labs')}
-        />
-
-        {/* Section 06: Communications Outpost (Southwest Hub) */}
-        <ContactShrine
-          position={[-38, 0.38, 38]}
-          isActive={activeZone === 'contact'}
-          onClick={() => onSelectZone('contact')}
-        />
-
-        {/* Section 07: Knowledge Summit Observatory (Northeast Mountain Bluff) */}
+        {/* Section 06: Knowledge Summit Observatory (Northwest Bluff) */}
         <KnowledgeSummit
-          position={[45, 3.8, -38]}
+          position={[-28, 1.8, -26]}
           isActive={activeZone === 'education'}
           onClick={() => onSelectZone('education')}
         />
 
-        {/* Section 08: Innovation Meadow Monoliths (Southeast Skill Grove) */}
-        <InnovationGrove
-          position={[36, 0.5, 42]}
-          isActive={activeZone === 'skills'}
-          onClick={() => onSelectZone('skills')}
+        {/* Section 07: Cybersecurity Bastion & Fortress (West Shore) */}
+        <CyberMonolith
+          position={[-39, 1.2, 0]}
+          isActive={activeZone === 'labs'}
+          onClick={() => onSelectZone('labs')}
+        />
+        <StoneLantern
+          position={[-35, 1.1, 4]}
+          isActive={activeZone === 'labs'}
+          onClick={() => onSelectZone('labs')}
+        />
+
+        {/* Section 08: Communications Outpost (Southwest Hub) */}
+        <ContactShrine
+          position={[-31, 0.38, 29]}
+          isActive={activeZone === 'contact'}
+          onClick={() => onSelectZone('contact')}
         />
 
         {/* Natural Forest & Flora Spread Across the Spacious Landscape */}
         {/* Sakura Trees along the Eastern Pavilion & Welcome Avenue */}
-        <SakuraTree position={[34, 0.4, 6]} scale={1.2} />
-        <SakuraTree position={[50, 0.5, 14]} scale={1.1} rotation={[0, 0.6, 0]} />
+        <SakuraTree position={[44, 0.5, 26]} scale={1.2} />
+        <SakuraTree position={[48, 0.5, 14]} scale={1.1} rotation={[0, 0.6, 0]} />
         <SakuraTree position={[8, 0.35, 46]} scale={1.15} />
         <SakuraTree position={[-8, 0.35, 46]} scale={1.15} rotation={[0, -0.4, 0]} />
 
         {/* Japanese Autumn Maple Trees in Innovation Grove & Lake Borders */}
-        <MapleTree position={[30, 0.4, 38]} scale={1.2} />
-        <MapleTree position={[42, 0.5, 46]} scale={1.1} rotation={[0, 0.8, 0]} />
-        <MapleTree position={[-12, 0.2, 28]} scale={1.1} />
-        <MapleTree position={[-24, 0.3, 4]} scale={1.2} rotation={[0, -0.5, 0]} />
+        <MapleTree position={[22, 0.55, -30]} scale={1.2} />
+        <MapleTree position={[32, 0.6, -28]} scale={1.1} rotation={[0, 0.8, 0]} />
+        <MapleTree position={[-16, 0.3, 34]} scale={1.1} />
+        <MapleTree position={[-24, 0.3, 14]} scale={1.2} rotation={[0, -0.5, 0]} />
 
         {/* Evergreen Pines along the Mountains & Northwest Bastion */}
-        <PineTree position={[-52, 1.8, -38]} scale={1.4} />
-        <PineTree position={[-36, 1.4, -44]} scale={1.3} />
+        <PineTree position={[-38, 1.6, -34]} scale={1.4} />
+        <PineTree position={[-46, 1.4, -20]} scale={1.3} />
         <PineTree position={[-20, 0.8, -46]} scale={1.2} />
         <PineTree position={[20, 0.8, -46]} scale={1.2} />
         <PineTree position={[38, 2.2, -44]} scale={1.35} />
-        <PineTree position={[54, 3.6, -34]} scale={1.5} />
-        <PineTree position={[-48, 1.2, 12]} scale={1.3} />
-        <PineTree position={[-54, 1.8, -10]} scale={1.4} />
+        <PineTree position={[-44, 1.2, 22]} scale={1.3} />
+        <PineTree position={[-46, 1.4, -6]} scale={1.4} />
 
         {/* Atmospheric particles: falling autumn leaves & low mist */}
         <Atmosphere timeOfDay={timeOfDay} />

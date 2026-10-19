@@ -80,55 +80,23 @@ export const Terrain = ({ timeOfDay = 'day' }: TerrainProps) => {
         />
       </mesh>
 
-      {/* 3. Grand Entrance Avenue (South: Welcome Plaza [0, 42] to Lake [0, 24]) */}
-      <mesh position={[0, 0.38, 34]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[4.2, 22, 16, 16]} />
-        <meshStandardMaterial color={terrainColors.path} roughness={0.9} />
-      </mesh>
-      {/* Cobblestone Stone Curbs along Grand Entrance Avenue */}
-      <mesh position={[-2.15, 0.40, 34]} castShadow receiveShadow>
-        <boxGeometry args={[0.22, 0.1, 22]} />
-        <meshStandardMaterial color={terrainColors.curb} roughness={0.88} />
-      </mesh>
-      <mesh position={[2.15, 0.40, 34]} castShadow receiveShadow>
-        <boxGeometry args={[0.22, 0.1, 22]} />
-        <meshStandardMaterial color={terrainColors.curb} roughness={0.88} />
-      </mesh>
 
-      {/* 4. East Promenade (Leading toward Lakeside Pavilion [42, 8]) */}
-      <mesh position={[22, 0.34, 16]} rotation={[-Math.PI / 2, 0, -0.6]} receiveShadow>
-        <planeGeometry args={[3.6, 32, 16, 16]} />
-        <meshStandardMaterial color={terrainColors.path} roughness={0.9} />
-      </mesh>
-
-      {/* Raked sand / gravel terrace surrounding Lakeside Pavilion */}
-      <mesh position={[42, 0.48, 8]} rotation={[-Math.PI / 2, 0, 0.15]} receiveShadow>
-        <planeGeometry args={[16, 14, 24, 24]} />
+      {/* Raked sand / gravel terrace surrounding Lakeside Pavilion (Zone 02) */}
+      <mesh position={[38, 0.46, 20]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[14, 12, 16, 16]} />
         <meshStandardMaterial color={terrainColors.terrace} roughness={0.95} />
       </mesh>
 
-      {/* 5. Northeast Mountain Trail (Leading up to Knowledge Summit [45, -38]) */}
-      <mesh position={[43, 1.8, -16]} rotation={[-Math.PI / 2, 0, 0.05]} receiveShadow>
-        <planeGeometry args={[3.2, 36, 16, 16]} />
-        <meshStandardMaterial color={terrainColors.path} roughness={0.94} />
+      {/* Raked sand / gravel terrace surrounding Project Archipelago (Zone 03) */}
+      <mesh position={[35, 0.40, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[12, 16, 16, 16]} />
+        <meshStandardMaterial color={terrainColors.terrace} roughness={0.95} />
       </mesh>
 
-      {/* 6. Northwest Bastion Highway (Leading to Cyber Fortress [-42, -34]) */}
-      <mesh position={[-30, 0.8, -20]} rotation={[-Math.PI / 2, 0, 0.7]} receiveShadow>
-        <planeGeometry args={[3.8, 34, 16, 16]} />
-        <meshStandardMaterial color={terrainColors.path} roughness={0.92} />
-      </mesh>
-
-      {/* 7. Southwest Trail (Leading to Communications Outpost [-38, 38]) */}
-      <mesh position={[-20, 0.35, 38]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[3.4, 28, 16, 16]} />
-        <meshStandardMaterial color={terrainColors.path} roughness={0.92} />
-      </mesh>
-
-      {/* Natural organic boulder landmarks spaced comfortably along trails */}
+      {/* Natural organic boulder landmarks spaced comfortably along landscape */}
       <Boulder position={[-6, 0.2, 24]} scale={[2.2, 1.4, 1.8]} rotation={[0.2, 0.8, -0.1]} />
       <Boulder position={[8, 0.2, 26]} scale={[1.8, 1.1, 1.5]} rotation={[-0.1, 1.2, 0.3]} />
-      <Boulder position={[28, 0.35, 22]} scale={[2.4, 1.6, 2.0]} rotation={[0.3, -0.4, 0.1]} />
+      <Boulder position={[28, 0.35, 12]} scale={[2.4, 1.6, 2.0]} rotation={[0.3, -0.4, 0.1]} />
       <Boulder position={[52, 0.6, 12]} scale={[2.0, 1.3, 1.7]} rotation={[-0.2, 0.5, 0.2]} />
       <Boulder position={[-24, 0.3, 16]} scale={[2.6, 1.7, 2.2]} rotation={[0.1, -0.9, -0.2]} />
       <Boulder position={[-38, 0.8, -12]} scale={[3.2, 2.0, 2.8]} rotation={[0.3, 0.4, -0.2]} />

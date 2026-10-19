@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Footprints, Video, Sparkles, Navigation } from 'lucide-react';
+import { Footprints, Video, Sparkles, Navigation, ChevronRight, X } from 'lucide-react';
 import type { LandmarkTarget } from '../scene/PlayerController';
 import { LANDMARK_TARGETS } from '../scene/PlayerController';
 
@@ -12,6 +12,7 @@ interface OpenWorldControlsProps {
   onVirtualMove?: (input: { x: number; y: number; isSprinting?: boolean; isJumping?: boolean }) => void;
   isRidingCableCar?: boolean;
   onToggleRideCableCar?: (riding: boolean) => void;
+  isDrawerOpen?: boolean;
 }
 
 export const OpenWorldControls = ({
@@ -22,10 +23,12 @@ export const OpenWorldControls = ({
   playerPosition,
   onVirtualMove,
   isRidingCableCar = false,
-  onToggleRideCableCar
+  onToggleRideCableCar,
+  isDrawerOpen = false
 }: OpenWorldControlsProps) => {
   const [showMinimap, setShowMinimap] = useState(true);
   const [isSprinting, setIsSprinting] = useState(false);
+  const [dismissedLandmarkId, setDismissedLandmarkId] = useState<string | null>(null);
   const joystickBaseRef = useRef<HTMLDivElement>(null);
   const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0 });
   const isDraggingJoystick = useRef(false);
@@ -137,20 +140,71 @@ export const OpenWorldControls = ({
         </button>
       </div>
 
-      {/* 2. Interactive Proximity Prompt (Appears when near a landmark) */}
-      {isFreeRoam && nearbyLandmark && (
+      {/* 2. Interactive Zone Arrival Prompt (Appears when reaching any of the 8 zones) */}
+      {isFreeRoam && !isDrawerOpen && nearbyLandmark && dismissedLandmarkId !== nearbyLandmark.id && (
         <div
-          className="proximity-prompt-card animate-pulse"
-          onClick={() => onInteractLandmark(nearbyLandmark.id)}
-          role="button"
-          tabIndex={0}
+          className="zone-arrival-banner animate-slide-up"
+          role="dialog"
+          aria-label={`Arrival at ${nearbyLandmark.zoneTag}`}
         >
-          <div className="prompt-key">E</div>
-          <div className="prompt-info">
-            <span className="prompt-title">{nearbyLandmark.name}</span>
-            <span className="prompt-action">Press [E] or Click to Inspect ({nearbyLandmark.subtitle})</span>
+          <div className="arrival-top-row">
+            <div className="arrival-badge">
+              <span className="arrival-pulse-dot" />
+              <span className="arrival-zone-tag">{nearbyLandmark.zoneTag}</span>
+            </div>
+            {nearbyLandmark.hasCableCarStation && (
+              <span className="cable-car-available-pill">🚠 Aerial Station</span>
+            )}
+            <button
+              type="button"
+              className="arrival-close-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDismissedLandmarkId(nearbyLandmark.id);
+              }}
+              title="Dismiss prompt & keep exploring"
+              aria-label="Dismiss arrival prompt"
+            >
+              <X size={15} />
+            </button>
           </div>
-          <Sparkles size={16} className="prompt-icon" />
+
+          <div className="arrival-main-body">
+            <div className="arrival-info-col">
+              <h3 className="arrival-title">{nearbyLandmark.name}</h3>
+              <p className="arrival-description">{nearbyLandmark.description}</p>
+            </div>
+          </div>
+
+          <div className="arrival-actions-row">
+            <button
+              type="button"
+              className="btn-arrival-enter"
+              onClick={() => onInteractLandmark(nearbyLandmark.id)}
+              title={`Enter ${nearbyLandmark.zoneTag} Page [Press Enter or E]`}
+            >
+              <span className="key-shortcut-tag">Enter ↵</span>
+              <span className="action-label">
+                Enter {nearbyLandmark.zoneTag.includes('—') ? nearbyLandmark.zoneTag.split('—')[1].trim() : nearbyLandmark.name} Page
+              </span>
+              <ChevronRight size={16} className="action-arrow" />
+            </button>
+
+            {nearbyLandmark.hasCableCarStation && (
+              <button
+                type="button"
+                className="btn-arrival-cablecar"
+                onClick={() => onToggleRideCableCar?.(true)}
+                title="Board aerial cable car [Press C]"
+              >
+                <span>🚠 Cable Car [C]</span>
+              </button>
+            )}
+          </div>
+
+          <div className="arrival-footer-hint">
+            <span>Press <strong>[Enter]</strong> or <strong>[E]</strong> or click button to open zone details</span>
+          </div>
         </div>
       )}
 
@@ -216,7 +270,7 @@ export const OpenWorldControls = ({
                   key={lm.id}
                   className={`radar-blip ${isNearby ? 'active' : ''}`}
                   style={{ left: `${left}%`, top: `${top}%` }}
-                  title={`${lm.name} — ${lm.subtitle}`}
+                  title={`${lm.zoneTag}: ${lm.name} — ${lm.subtitle}`}
                   onClick={() => onInteractLandmark(lm.id)}
                 />
               );

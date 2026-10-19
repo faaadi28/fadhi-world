@@ -21,25 +21,25 @@ export function getTerrainHeight(x: number, z: number): number {
   }
 
   // 3. Distinct Themed Elevated Landforms & Biomes:
-  // Hill A: Knowledge Summit (Northeast High Observatory)
-  const distSummit = Math.hypot(x - 45, z - (-38)) / 14.0;
-  const hillSummit = Math.exp(-distSummit * distSummit) * 4.2;
+  // Hill A: Knowledge Summit (Northwest Observatory, Zone 06)
+  const distSummit = Math.hypot(x - (-28), z - (-26)) / 14.0;
+  const hillSummit = Math.exp(-distSummit * distSummit) * 2.8;
 
-  // Hill B: Cybersecurity Bastion Plateau (Northwest Fortress)
-  const distBastion = Math.hypot(x - (-42), z - (-34)) / 15.0;
-  const hillBastion = Math.exp(-distBastion * distBastion) * 2.0;
+  // Hill B: Cybersecurity Bastion Plateau (West Shore, Zone 07)
+  const distBastion = Math.hypot(x - (-38), z - 0) / 14.0;
+  const hillBastion = Math.exp(-distBastion * distBastion) * 1.8;
 
-  // Hill C: Innovation Meadow Bluffs (Southeast)
-  const distMeadow = Math.hypot(x - 36, z - 42) / 16.0;
-  const hillMeadow = Math.exp(-distMeadow * distMeadow) * 1.5;
+  // Hill C: Innovation Meadow Bluffs (Northeast, Zone 04)
+  const distMeadow = Math.hypot(x - 26, z - (-24)) / 14.0;
+  const hillMeadow = Math.exp(-distMeadow * distMeadow) * 1.6;
 
-  // Hill D: Western Pine Ridge (West)
-  const distPine = Math.hypot(x - (-48), z - 0) / 18.0;
-  const hillPine = Math.exp(-distPine * distPine) * 2.6;
+  // Hill D: Communications Outpost Ridge (Southwest, Zone 08)
+  const distPine = Math.hypot(x - (-31), z - 29) / 14.0;
+  const hillPine = Math.exp(-distPine * distPine) * 1.2;
 
-  // Hill E: Lakeside Pavilion Plateau (East Terrace)
-  const distPavilion = Math.hypot(x - 42, z - 8) / 12.0;
-  const hillPavilion = Math.exp(-distPavilion * distPavilion) * 0.6;
+  // Hill E: Lakeside Pavilion Plateau (East Shore, Zone 02)
+  const distPavilion = Math.hypot(x - 38, z - 20) / 14.0;
+  const hillPavilion = Math.exp(-distPavilion * distPavilion) * 0.8;
 
   // 4. Outer Horizon Mountains framing the vast open world (starts beyond radius 55)
   const r = Math.hypot(x, z);
@@ -58,7 +58,7 @@ export function getTerrainHeight(x: number, z: number): number {
 // Check if position is on the Grand Valley Bridge (located at [0, 0.8, -40], span along x: -8 to 8, width along z: -43 to -37)
 export function getBridgeHeight(x: number, z: number): number | null {
   const dx = x;
-  const dz = z - (-40);
+  const dz = z - (-39);
 
   if (Math.abs(dx) <= 7.5 && Math.abs(dz) <= 2.2) {
     const t = dx / 7.5; // -1 to 1
@@ -68,10 +68,10 @@ export function getBridgeHeight(x: number, z: number): number | null {
   return null;
 }
 
-// Check if position is on the Lakeside Pavilion deck (at [42, 0.5, 8], deck width 8m x 7m)
+// Check if position is on the Lakeside Pavilion deck (at [38, 0.5, 20], deck width 8m x 7m)
 export function getPavilionHeight(x: number, z: number): number | null {
-  const dx = x - 42;
-  const dz = z - 8;
+  const dx = x - 38;
+  const dz = z - 20;
 
   if (Math.abs(dx) <= 4.2 && Math.abs(dz) <= 3.8) {
     return 0.72; // Elevated deck height
